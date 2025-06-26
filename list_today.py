@@ -1,14 +1,10 @@
-# import os, datetime
-# from google.auth.transport.requests import Request
-# from google.oauth2.credentials import Credentials
-# from google_auth_oauthlib.flow import InstalledAppFlow
-# from googleapiclient.discovery import build
-
-# # If you modify scopes, delete token.json.
-# SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
-
 from service_helper import get_service
 import datetime
+
+'''
+Example:
+python list_today.py
+'''
 
 def list_today_events():
     service = get_service(read_only=True)
