@@ -3,3 +3,4 @@ token.json
 __pycache__/
 .env
 venv/
+llm.log
