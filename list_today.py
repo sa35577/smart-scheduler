@@ -12,7 +12,7 @@ def list_today_events() -> list[Event]:
     service = get_service(read_only=True)
 
     # Define start/end of "today" in RFC3339 UTC format:
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.datetime.now()
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = start_of_day + datetime.timedelta(days=1)
 
@@ -35,7 +35,7 @@ def list_today_events() -> list[Event]:
 
     if not events:
         logging.info("No events found for today.")
-        return
+        return []
 
     logging.info(f"Events for {start_of_day.date()}:")
     results = []
