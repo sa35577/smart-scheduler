@@ -1,0 +1,27 @@
+example llm output:
+
+
+```json
+[
+  {
+    "start_time": "09:00",
+    "end_time": "09:10",
+    "summary": "Task 1: Description 1 that should take 10 minutes."
+  },
+  {
+    "start_time": "09:10",
+    "end_time": "09:30",
+    "summary": "Task 2: Description 2 that should take 20 minutes."
+  },
+  {
+    "start_time": "09:30",
+    "end_time": "10:00",
+    "summary": "Task 3: Description 3 that should take 30 minutes."
+  },
+  {
+    "start_time": "12:00",
+    "end_time": "13:00",
+    "summary": "Sample meeting"
+  }
+]
+```
