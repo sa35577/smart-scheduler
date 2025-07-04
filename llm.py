@@ -1,10 +1,11 @@
-# import os
+import datetime
+import logging
+
 from dotenv import load_dotenv
 from openai import OpenAI
+
 from list_today import list_today_events
-import logging
 from schemas import Event, Task
-import datetime
 
 logging.basicConfig(
     filename='llm.log',
@@ -66,8 +67,8 @@ def interface(tasks: list[Task]):
 
 if __name__ == "__main__":
     tasks = [
-        Task("Task 1", "Description 1", 10),
-        Task("Task 2", "Description 2", 20),
-        Task("Task 3", "Description 3", 30),
+        Task(name="Task 1", description="Description 1", time_estimate=10),
+        Task(name="Task 2", description="Description 2", time_estimate=20),
+        Task(name="Task 3", description="Description 3", time_estimate=30),
     ]
     interface(tasks)

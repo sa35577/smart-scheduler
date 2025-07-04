@@ -46,7 +46,7 @@ def list_today_events() -> list[Event]:
         start_fmt = datetime.datetime.fromisoformat(start).strftime('%I:%M %p')
         end_fmt   = datetime.datetime.fromisoformat(end).strftime('%I:%M %p')
         logging.info(f" • {evt['summary']} — {start_fmt} to {end_fmt}")
-        results.append(Event(evt['summary'], start_fmt, end_fmt))
+        results.append(Event(summary=evt['summary'], start=start_fmt, end=end_fmt))
 
     return results
 

@@ -1,10 +1,16 @@
-class Event:
-    def __init__(self, summary, start, end, location=None, description=None):
-        self.summary = summary
-        self.start = start
-        self.end = end
-        self.location = location
-        self.description = description
+from pydantic import BaseModel
+from typing import Optional
+
+class Event(BaseModel):
+    '''
+    An event is a single item that is in a calendar,
+    or a single item that I want to add to a calendar.
+    '''
+    summary: str
+    start: str
+    end: str
+    location: Optional[str] = None
+    description: Optional[str] = None
 
     def __str__(self):
         return f"{self.summary} from {self.start} to {self.end}"
@@ -12,15 +18,16 @@ class Event:
     def __repr__(self):
         return self.__str__()
     
-class Task:
-    # a task is a single item that I need to complete today
-    # it has a name, a description, and an amount of time it will take,
-    # and an optional preference for what time of day it should be completed
-    def __init__(self, name, description, time_estimate, preferred_time_of_day=None):
-        self.name = name
-        self.description = description
-        self.time_estimate = time_estimate
-        self.preferred_time_of_day = preferred_time_of_day
+class Task(BaseModel):
+    '''
+    A task is a single item that I need to complete today.
+    It has a name, a description, and an amount of time it will take,
+    and an optional preference for what time of day it should be completed.
+    '''
+    name: str
+    description: str
+    time_estimate: int
+    preferred_time_of_day: Optional[str] = None
 
     # to do print(task)
     def __str__(self):
