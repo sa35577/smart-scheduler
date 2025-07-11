@@ -11,15 +11,19 @@ python list_today.py
 def list_today_events() -> list[Event]:
     service = get_service(read_only=True)
 
-    # Define start/end of "today" in RFC3339 UTC format:
-    now = datetime.datetime.now()
+    # Get calendar timezone
+    calendar = service.calendars().get(calendarId='primary').execute()
+    timezone = calendar.get('timeZone', 'UTC')
+    
+    # Define start/end of "today" in the calendar's timezone:
+    from zoneinfo import ZoneInfo
+    tz = ZoneInfo(timezone)
+    now = datetime.datetime.now(tz)
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = start_of_day + datetime.timedelta(days=1)
 
-    # iso_start = start_of_day.isoformat() + 'Z'
-    # iso_end   = end_of_day.isoformat()   + 'Z'
-    iso_start = start_of_day.strftime('%Y-%m-%dT%H:%M:%SZ')
-    iso_end   = end_of_day.strftime('%Y-%m-%dT%H:%M:%SZ')
+    iso_start = start_of_day.isoformat()
+    iso_end = end_of_day.isoformat()
 
     logging.info(iso_start)
     logging.info(iso_end)

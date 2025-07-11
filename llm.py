@@ -1,11 +1,13 @@
+import pdb
 import datetime
 import logging
+import json
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 from list_today import list_today_events
-from schemas import Event, Task
+from schemas import Event, Task, Schedule
 
 logging.basicConfig(
     filename='llm.log',
@@ -29,41 +31,76 @@ def test_llm():
 
 def generate_prompt(events: list[Event], tasks: list[Task]) -> str:
     prompt = f"""
-    You are a helpful assistant that helps me manage my calendar.
-    I have {len(events)} following events today:
-    {events}
-    Today is {datetime.datetime.now().strftime("%Y-%m-%d")}.
-    I have a list of tasks that I need to complete today.
-    I have {len(tasks)} tasks to complete today:
-    {tasks}
+You are a helpful assistant that helps me manage my calendar.
+I have {len(events)} following events today:
+{events}
+Today is {datetime.datetime.now():%Y-%m-%d}.
+I have a list of tasks that I need to complete today.
+I have {len(tasks)} tasks to complete today:
+{tasks}
 
-    I need to schedule my tasks around my events.
-    I need to complete all of my tasks.
-    Help me build a schedule that will allow me to complete all of my tasks.
-    Return the schedule in a JSON format.
-    The schedule should be a list of events.
-    Each event should have a start time, an end time, and a summary.
-    The start time and end time should be in the format of "HH:MM".
-    The schedule should be sorted by the start time.
+Please build a schedule that lets me finish all my tasks around my existing events.
+Return **only** a JSON object matching the schema I provided.
     """
     return prompt
 
 def interface(tasks: list[Task]):
     events = list_today_events()
-    # print(f"Found {len(events)} events today.")
-    # for event in events:
-    #     print(event)
+    print(f"Found {len(events)} events today.")
+    for event in events:
+        print(event)
+
+    input("Press Enter to continue...")
 
     prompt = generate_prompt(events, tasks)
     print(prompt)
 
     input("Press Enter to continue prompting...")
 
-    response = client.responses.create(
+    response = client.responses.parse(
         model="gpt-4.1",
-        input=prompt
+        input=prompt,
+        text_format=Schedule
     )
-    print(response.output_text)
+    
+    schedule = response.output_parsed
+    print(f"Found {len(schedule)} scheduled events:")
+    for event in schedule:
+        print(f"Event: {event.summary}: {event.start} to {event.end}")
+        if event.description:
+            print(f"    Description: {event.description}")
+    
+    return schedule
+
+
+def test_schema():
+    prompt = """
+You are a helpful assistant that helps me manage my calendar.
+I have 2 following events today:
+[test 2 from 12:30 PM to 01:30 PM, test from 06:30 PM to 07:30 PM]
+Today is 2025-07-07.
+I have a list of tasks that I need to complete today.
+I have 3 tasks to complete today:
+[Name: 'Task 1' Description: 'Description 1' Time Estimate: 10 minutes., Name: 'Task 2' Description: 'Description 2' Time Estimate: 20 minutes., Name: 'Task 3' Description: 'Description 3' Time Estimate: 30 minutes.]
+
+Please build a schedule that lets me finish all my tasks around my existing events.
+Return **only** a JSON object matching the schema I provided.
+"""
+    response = client.responses.parse(
+        model="gpt-4.1",
+        input=prompt,
+        text_format=Schedule
+    )
+    
+    schedule = response.output_parsed
+    print(f"Found {len(schedule)} scheduled events:")
+    for event in schedule:
+        print(f"HI  {event.summary}: {event.start} to {event.end}")
+        if event.description:
+            print(f"    Description: {event.description}")
+    
+    return schedule
+
 
 if __name__ == "__main__":
     tasks = [
@@ -72,3 +109,4 @@ if __name__ == "__main__":
         Task(name="Task 3", description="Description 3", time_estimate=30),
     ]
     interface(tasks)
+    # test_schema()

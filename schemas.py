@@ -31,7 +31,7 @@ class Task(BaseModel):
 
     # to do print(task)
     def __str__(self):
-        base = f"{self.name}: {self.description} that should take {self.time_estimate} minutes."
+        base = f"Name: '{self.name}' Description: '{self.description}' Time Estimate: {self.time_estimate} minutes."
         if self.preferred_time_of_day:
             base += f" Ideally, I would like to do this task at {self.preferred_time_of_day}."
         return base
@@ -39,3 +39,26 @@ class Task(BaseModel):
     # to do print(tasks)
     def __repr__(self):
         return self.__str__()
+    
+class Schedule(BaseModel):
+    '''
+    A schedule is a list of events.
+    '''
+    events: list[Event]
+
+    def __str__(self):
+        return f"Schedule: {self.events}"
+    
+    def __repr__(self):
+        return self.__str__()
+
+    def __iter__(self):
+        return iter(self.events)
+
+    def __getitem__(self, index):
+        return self.events[index]
+
+    def __len__(self):
+        return len(self.events)
+    
+    
