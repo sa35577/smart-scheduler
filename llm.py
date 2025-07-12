@@ -69,6 +69,8 @@ def interface(tasks: list[Task]):
         print(f"Event: {event.summary}: {event.start} to {event.end}")
         if event.description:
             print(f"    Description: {event.description}")
+
+    print("Press enter to add events to calendar...")
     
     return schedule
 

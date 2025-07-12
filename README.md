@@ -78,7 +78,7 @@ your itinerary for the day.
 - [x] Get the LLM to do a simple prompt
 - [x] Integrate a flow to read events for the day -> put that in LLM context to generate some output
 - [x] Put some sample tasks in and put that into the LLM context
-- [ ] Get this flow to create tasks according to some JSON schema
+- [x] Get this flow to create tasks according to the Event schema
 - [ ] Insert events from this day into the calendar, if they're not already there
 
 ### Following:
