@@ -7,7 +7,7 @@ from googleapiclient.discovery import build
 
 # If you modify scopes, delete token.json.
 READ_ONLY_SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
-ALL_SCOPES = ['https://www.googleapis.com/auth/calendar.events']
+ALL_SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar.readonly']
 
 def get_service(read_only=False):
     creds = None

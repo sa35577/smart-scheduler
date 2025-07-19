@@ -8,7 +8,7 @@ from openai import OpenAI
 from zoneinfo import ZoneInfo
 
 from list_today import list_today_events, get_calendar_timezone
-from create_event import create_event
+from create_event import create_event, create_events
 from schemas import Event, Task, Schedule
 
 logging.basicConfig(
@@ -97,6 +97,10 @@ def interface(tasks: list[Task]):
             print(f"    Description: {event.description}")
 
     print("Press enter to add events to calendar...")
+
+
+    # TODO: add events to calendar only if they are not already in the calendar
+    create_events(schedule)
     
     return schedule
 
