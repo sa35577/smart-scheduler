@@ -11,11 +11,14 @@ ALL_SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.go
 
 def get_service(read_only=False):
     creds = None
-    SCOPES = READ_ONLY_SCOPES if read_only else ALL_SCOPES
+    # SCOPES = READ_ONLY_SCOPES if read_only else ALL_SCOPES
+    SCOPES = ALL_SCOPES
+    
+    # Load existing credentials if available
     if os.path.exists('token.json'):
-        os.remove('token.json')
-    # if os.path.exists('token.json'):
-    #     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+    # If no valid credentials available, let the user log in
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -23,6 +26,8 @@ def get_service(read_only=False):
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
         with open('token.json', 'w') as f:
             f.write(creds.to_json())
+    
     return build('calendar', 'v3', credentials=creds)

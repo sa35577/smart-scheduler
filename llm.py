@@ -96,7 +96,7 @@ def interface(tasks: list[Task]):
         if event.description:
             print(f"    Description: {event.description}")
 
-    print("Press enter to add events to calendar...")
+    input("Press enter to add events to calendar...")
 
 
     # TODO: add events to calendar only if they are not already in the calendar

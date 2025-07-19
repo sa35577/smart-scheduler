@@ -82,6 +82,7 @@ your itinerary for the day.
 - [ ] Insert events from this day into the calendar, if they're not already there
 
 ### Following:
+- [ ] Get all access once to Google Calendar API
 - [ ] Build a UI to enter tasks (what type? app, web, desktop/mobile)
 - [ ] Deploy & test
 - [ ] Develop a pipline for being able to revise events in the planning and post fix phase
