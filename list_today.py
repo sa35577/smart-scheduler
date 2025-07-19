@@ -2,11 +2,17 @@ from service_helper import get_service
 import datetime
 import logging
 from schemas import Event
+from zoneinfo import ZoneInfo
 
 '''
 Example:
 python list_today.py
 '''
+
+def get_calendar_timezone() -> str:
+    service = get_service(read_only=True)
+    calendar = service.calendars().get(calendarId='primary').execute()
+    return calendar.get('timeZone', 'UTC')
 
 def list_today_events() -> list[Event]:
     service = get_service(read_only=True)
@@ -16,7 +22,7 @@ def list_today_events() -> list[Event]:
     timezone = calendar.get('timeZone', 'UTC')
     
     # Define start/end of "today" in the calendar's timezone:
-    from zoneinfo import ZoneInfo
+    
     tz = ZoneInfo(timezone)
     now = datetime.datetime.now(tz)
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)

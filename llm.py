@@ -5,8 +5,10 @@ import json
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from zoneinfo import ZoneInfo
 
-from list_today import list_today_events
+from list_today import list_today_events, get_calendar_timezone
+from create_event import create_event
 from schemas import Event, Task, Schedule
 
 logging.basicConfig(
@@ -49,6 +51,30 @@ def interface(tasks: list[Task]):
     print(f"Found {len(events)} events today.")
     for event in events:
         print(event)
+
+    if len(events) == 0:
+        # add some test events
+        # create an event at 9am for the day the program is run
+        tz = ZoneInfo(get_calendar_timezone())
+        now = datetime.datetime.now(tz)
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Create event at 9am
+        event_start = start_of_day.replace(hour=11, minute=0, second=0, microsecond=0)
+        event_end = event_start + datetime.timedelta(minutes=30)
+        
+        event = Event(
+            summary="Test Event",
+            start=event_start.isoformat(),
+            end=event_end.isoformat()
+        )
+        create_event(event)
+        events = list_today_events()
+        print(f"Added test event: {event}")
+
+        print(f"Found {len(events)} events today.")
+        for event in events:
+            print(event)
 
     input("Press Enter to continue...")
 
