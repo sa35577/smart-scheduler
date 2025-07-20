@@ -42,7 +42,7 @@ def create_events(events: list[Event]):
         }
 
         if event.already_in_calendar:
-            print(f"Event {event.description} is already in the calendar, skipping...")
+            print(f"Event {event.summary} is already in the calendar, skipping...")
             continue
 
         created = service.events().insert(
