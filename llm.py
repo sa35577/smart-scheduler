@@ -43,6 +43,7 @@ I have {len(tasks)} tasks to complete today:
 
 Please build a schedule that lets me finish all my tasks around my existing events.
 Return **only** a JSON object matching the schema I provided.
+Also, for each event, set the already_in_calendar field to True if it is already in the calendar (as in, its already an event in the calendar), and False if it is not.
     """
     return prompt
 

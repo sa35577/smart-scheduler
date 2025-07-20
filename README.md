@@ -79,10 +79,11 @@ your itinerary for the day.
 - [x] Integrate a flow to read events for the day -> put that in LLM context to generate some output
 - [x] Put some sample tasks in and put that into the LLM context
 - [x] Get this flow to create tasks according to the Event schema
-- [ ] Insert events from this day into the calendar, if they're not already there
+- [x] Insert events from this day into the calendar
+- [x] Only insert events that aren't in the calendar
 
 ### Following:
-- [ ] Get all access once to Google Calendar API
+- [x] Get all access once to Google Calendar API
 - [ ] Build a UI to enter tasks (what type? app, web, desktop/mobile)
 - [ ] Deploy & test
 - [ ] Develop a pipline for being able to revise events in the planning and post fix phase

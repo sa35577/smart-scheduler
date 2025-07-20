@@ -11,6 +11,7 @@ class Event(BaseModel):
     end: str
     location: Optional[str] = None
     description: Optional[str] = None
+    already_in_calendar: Optional[bool] = True
 
     def __str__(self):
         return f"{self.summary} from {self.start} to {self.end}"

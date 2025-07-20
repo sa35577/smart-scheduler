@@ -40,6 +40,11 @@ def create_events(events: list[Event]):
             'start':       {'dateTime': start_dt.isoformat()},
             'end':         {'dateTime': end_dt.isoformat()},
         }
+
+        if event.already_in_calendar:
+            print(f"Event {event.description} is already in the calendar, skipping...")
+            continue
+
         created = service.events().insert(
             calendarId='primary',
             body=event_dict,
