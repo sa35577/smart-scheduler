@@ -62,9 +62,44 @@ your itinerary for the day.
    - Follow the prompts to authorize the application
    - A `token.json` file will be created automatically
 
+### Testing & Debugging
+
+1. **Run the test suite:**
+   ```bash
+   python llm.py --test
+   ```
+   This will run comprehensive tests for all components including:
+   - LLM functionality
+   - Calendar operations
+   - Schema parsing
+   - Full pipeline testing
+
+2. **View application logs:**
+   ```bash
+   python llm.py --logs
+   ```
+   Shows recent log entries for debugging and monitoring.
+
+3. **Clear log files:**
+   ```bash
+   python llm.py --clear-logs
+   ```
+   Removes all log files to start fresh.
+
+4. **Run individual test file:**
+   ```bash
+   python test_scheduler.py
+   ```
+
 ### Project Structure
 
-- `llm.py` - Main application entry point
+#### Core Application Files
+- `llm.py` - Main application entry point with CLI interface
+- `calendar_manager.py` - Handles all calendar operations (read/write/timezone)
+- `prompt_generator.py` - Manages LLM interactions and prompt creation
+- `scheduler_pipeline.py` - Orchestrates the entire scheduling workflow
+
+#### Supporting Files
 - `list_today.py` - Calendar event retrieval functionality
 - `create_event.py` - Calendar event creation functionality
 - `service_helper.py` - Google Calendar API service helper
