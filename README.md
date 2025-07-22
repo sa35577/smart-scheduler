@@ -119,6 +119,6 @@ your itinerary for the day.
 
 ### Following:
 - [x] Get all access once to Google Calendar API
+- [x] Develop a pipline for being able to revise events in the planning and post fix phase
 - [ ] Build a UI to enter tasks (what type? app, web, desktop/mobile)
 - [ ] Deploy & test
-- [ ] Develop a pipline for being able to revise events in the planning and post fix phase
