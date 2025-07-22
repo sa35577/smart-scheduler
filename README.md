@@ -1,6 +1,7 @@
 # Smart Scheduler
 
 Smart Scheduler is your AI-powered, conversational day planner—just tell it what you want to do, and it handles the rest, right down to syncing with your calendar.
+
 ## 🎥 Demo
 
 Check out the demo video on [YouTube](https://youtu.be/5lxNRZoPjZU). It is based on the CLI version currently.
