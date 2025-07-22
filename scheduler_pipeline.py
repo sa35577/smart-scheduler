@@ -30,7 +30,19 @@ class SchedulerPipeline:
             
             # Step 3: Generate schedule
             schedule = self._generate_schedule(events, tasks)
-            
+
+            # Feedback loop
+            while interactive:
+                print("\nHere is your generated schedule:")
+                for event in schedule:
+                    print(f"Event: {event.summary}: {event.start} to {event.end}")
+                    if event.description:
+                        print(f"    Description: {event.description}")
+                feedback = input("\nWould you like to make any changes? (Describe in plain English, or press Enter to accept): ")
+                if not feedback.strip():
+                    break
+                schedule = self.prompt_generator.adjust_schedule_with_feedback(schedule, feedback)
+
             if interactive:
                 input("Press Enter to add events to calendar...")
             
