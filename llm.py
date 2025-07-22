@@ -27,9 +27,9 @@ def main():
         
         # Define tasks
         tasks = [
-            Task(name="Task 1", description="Description 1", time_estimate=10),
-            Task(name="Task 2", description="Description 2", time_estimate=20),
-            Task(name="Task 3", description="Description 3", time_estimate=30),
+            Task(name="Write the blog post", description="Description 1", time_estimate=10),
+            Task(name="Attend the launch review", description="Description 2", time_estimate=20),
+            Task(name="Walk my dog", description="Description 3", time_estimate=30),
         ]
         
         # Run the pipeline
