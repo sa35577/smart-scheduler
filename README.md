@@ -1,9 +1,6 @@
-# Smart Scheduler App
+# Smart Scheduler
 
-The goal of this app is to be able to interact with the application, 
-either through some voice assistant or some other means to create 
-your itinerary for the day.
-
+Smart Scheduler is your AI-powered, conversational day planner—just tell it what you want to do, and it handles the rest, right down to syncing with your calendar.
 ## 🎥 Demo
 
 Check out the demo video on [YouTube](https://youtu.be/5lxNRZoPjZU). It is based on the CLI version currently.
