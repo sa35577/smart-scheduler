@@ -42,7 +42,8 @@ class CalendarManager:
             event = Event(
                 summary="Test Event",
                 start=event_start.isoformat(),
-                end=event_end.isoformat()
+                end=event_end.isoformat(),
+                already_in_calendar=False
             )
             
             logging.info(f"Creating test event: {event.summary} at {event.start}")
