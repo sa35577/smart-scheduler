@@ -14,7 +14,7 @@ class Event(BaseModel):
     already_in_calendar: Optional[bool] = True
 
     def __str__(self):
-        return f"{self.summary} from {self.start} to {self.end}"
+        return f"{self.summary} from {self.start} to {self.end}. Already in calendar: {self.already_in_calendar}"
     
     def __repr__(self):
         return self.__str__()
