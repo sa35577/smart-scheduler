@@ -31,22 +31,14 @@ class SchedulerPipeline:
             # Step 3: Generate schedule
             schedule = self._generate_schedule(events, tasks)
 
-            # Feedback loop
-            while interactive:
-                print("\nHere is your generated schedule:")
-                for event in schedule:
-                    print(f"Event: {event.summary}: {event.start} to {event.end}")
-                    if event.description:
-                        print(f"    Description: {event.description}")
-                feedback = input("\nWould you like to make any changes? (Describe in plain English, or press Enter to accept): ")
-                if not feedback.strip():
-                    break
-                schedule = self.prompt_generator.adjust_schedule_with_feedback(schedule, feedback)
-
+            # Step 4: Feedback loop
+            if interactive:
+                schedule = self._feedback_loop(schedule)
+            
             if interactive:
                 input("Press Enter to add events to calendar...")
             
-            # Step 4: Add events to calendar
+            # Step 5: Add events to calendar
             self._add_events_to_calendar(schedule)
             
             logging.info("Scheduler pipeline completed successfully")
@@ -87,6 +79,19 @@ class SchedulerPipeline:
             if event.description:
                 print(f"    Description: {event.description}")
         
+        return schedule
+    
+    def _feedback_loop(self, schedule: Schedule) -> Schedule:
+        while True:
+            print("\nHere is your generated schedule:")
+            for event in schedule:
+                print(f"Event: {event.summary}: {event.start} to {event.end}")
+                if event.description:
+                    print(f"    Description: {event.description}")
+            feedback = input("\nWould you like to make any changes? (Describe in plain English, or press Enter to accept): ")
+            if not feedback.strip():
+                break
+            schedule = self.prompt_generator.adjust_schedule_with_feedback(schedule, feedback)
         return schedule
     
     def _add_events_to_calendar(self, schedule: Schedule) -> None:
