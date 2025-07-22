@@ -17,8 +17,8 @@ Check out the demo video on [YouTube](https://youtu.be/5lxNRZoPjZU). It is based
 
 1. **Clone the repository:**
    ```bash
-   git clone <your-repo-url>
-   cd google-llm
+   git clone https://github.com/sa35577/smart-scheduler.git
+   cd smart-scheduler
    ```
 
 2. **Create and activate a virtual environment:**
