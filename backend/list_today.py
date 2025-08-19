@@ -9,13 +9,15 @@ Example:
 python list_today.py
 '''
 
-def get_calendar_timezone() -> str:
-    service = get_service(read_only=True)
+def get_calendar_timezone(service=None) -> str:
+    if service is None:
+        service = get_service(read_only=True)
     calendar = service.calendars().get(calendarId='primary').execute()
     return calendar.get('timeZone', 'UTC')
 
-def list_today_events() -> list[Event]:
-    service = get_service(read_only=True)
+def list_today_events(service=None) -> list[Event]:
+    if service is None:
+        service = get_service(read_only=True)
 
     # Get calendar timezone
     calendar = service.calendars().get(calendarId='primary').execute()

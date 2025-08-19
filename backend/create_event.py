@@ -14,8 +14,9 @@ python create_event.py \
   --description "Discuss Q3 roadmap"
 '''
 
-def create_events(events: list[Event]):
-    service = get_service()
+def create_events(events: list[Event], service=None):
+    if service is None:
+        service = get_service()
     
     # Get calendar timezone
     calendar = service.calendars().get(calendarId='primary').execute()
@@ -52,8 +53,8 @@ def create_events(events: list[Event]):
         print(f"Event created: {created.get('id')}")
 
 
-def create_event(event: Event):
-    return create_events([event])
+def create_event(event: Event, service=None):
+    return create_events([event], service)
 
 
 def parse_args():
