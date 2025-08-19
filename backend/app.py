@@ -47,7 +47,7 @@ def get_today_events(req: TokenRequest):
     try:
         calendar_manager = CalendarManager(access_token=req.access_token)
         events = calendar_manager.get_today_events()
-        return {"events": [event.dict() for event in events]}
+        return {"events": [event.model_dump() for event in events]}
     except Exception as e:
         logging.error(f"Failed to get today's events: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -58,7 +58,7 @@ def create_test_event(req: TokenRequest):
     try:
         calendar_manager = CalendarManager(access_token=req.access_token)
         event = calendar_manager.create_test_event()
-        return {"event": event.dict()}
+        return {"event": event.model_dump()}
     except Exception as e:
         logging.error(f"Failed to create test event: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -83,6 +83,17 @@ def get_current_date(req: TokenRequest):
         return {"current_date": current_date}
     except Exception as e:
         logging.error(f"Failed to get current date: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/calendar/today-events")
+def get_today_events(req: TokenRequest):
+    """Get today's events using the provided access token."""
+    try:
+        calendar_manager = CalendarManager(access_token=req.access_token)
+        events = calendar_manager.get_today_events()
+        return {"events": [event.model_dump() for event in events]}
+    except Exception as e:
+        logging.error(f"Failed to get today's events: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # @app.post("/schedule")

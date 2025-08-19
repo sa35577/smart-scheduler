@@ -82,6 +82,6 @@ if __name__ == "__main__":
     
     test_get_current_date(access_token)
     print()
-    
-    # Uncomment the line below to test creating a test event
-    # test_create_test_event(access_token) 
+
+    test_get_today_events(access_token)
+    print()
