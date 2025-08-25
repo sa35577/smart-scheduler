@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from openai import OpenAI
-from schemas import Event, Task, Schedule
+from schemas import Event, Task, Schedule, Tasks
 
 
 class PromptGenerator:
@@ -33,7 +33,39 @@ Make sure that all tasks not in the events are having already_in_calendar set to
         except Exception as e:
             logging.error(f"Failed to generate scheduling prompt: {e}")
             raise
-    
+
+    def generate_task_prompt(self, rant: str) -> str:
+        """Generate tasks from a rant."""
+        try:
+            prompt = f"""
+You are a helpful assistant that helps me manage my calendar.
+I need to convert this rant into a list of tasks:
+{rant}
+
+Return **only** a JSON object matching the schema I provided.
+"""
+            logging.debug(f"Generated prompt for {rant}")
+            return prompt
+        except Exception as e:
+            logging.error(f"Failed to generate tasks: {e}")
+            raise
+
+    def generate_tasks(self, rant: str) -> Tasks:
+        """Generate tasks from a rant."""
+        try:
+            prompt = self.generate_task_prompt(rant)
+            response = self.client.responses.parse(
+                model="gpt-4.1",
+                input=prompt,
+                text_format=Tasks
+            )
+            tasks = response.output_parsed
+            logging.info(f"Generated {len(tasks)} tasks")
+            return tasks
+        except Exception as e:
+            logging.error(f"Failed to generate tasks: {e}")
+            raise
+
     def generate_schedule(self, events: List[Event], tasks: List[Task], current_date: str) -> Schedule:
         """Generate a schedule using the LLM."""
         try:
