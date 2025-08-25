@@ -62,4 +62,23 @@ class Schedule(BaseModel):
     def __len__(self):
         return len(self.events)
     
+class Tasks(BaseModel):
+    '''
+    A list of tasks.
+    '''
+    tasks: list[Task]
+
+    def __str__(self):
+        return f"Tasks: {self.tasks}"
     
+    def __repr__(self):
+        return self.__str__()
+    
+    def __iter__(self):
+        return iter(self.tasks)
+    
+    def __getitem__(self, index):
+        return self.tasks[index]
+    
+    def __len__(self):
+        return len(self.tasks)

@@ -70,11 +70,8 @@ def generate_schedule(req: ScheduleRequest):
         prompt_generator = PromptGenerator(client)
         scheduler_pipeline = SchedulerPipeline(calendar_manager, prompt_generator)
         
-        # Parse tasks from rant (you might want to enhance this)
-        # For now, let's create some example tasks
-        tasks = [
-            Task(name="Task from rant", description=req.rant, time_estimate=60),
-        ]
+        # Parse tasks from rant
+        tasks = prompt_generator.generate_tasks(req.rant)
         
         # Generate initial schedule
         schedule = scheduler_pipeline._generate_schedule(

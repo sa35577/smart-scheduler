@@ -123,15 +123,15 @@ def test_interactive_scheduling(access_token):
     print("(Uncomment the code below to actually commit events to calendar)")
     
     # Uncomment these lines to actually commit the schedule:
-    # resp = requests.post(f"{BACKEND_URL}/schedule/commit", 
-    #                     json={
-    #                         "access_token": access_token,
-    #                         "schedule_id": schedule_id
-    #                     })
-    # if resp.status_code == 200:
-    #     print("Successfully committed schedule to calendar!")
-    # else:
-    #     print("Error committing schedule:", resp.json())
+    resp = requests.post(f"{BACKEND_URL}/schedule/commit", 
+                        json={
+                            "access_token": access_token,
+                            "schedule_id": schedule_id
+                        })
+    if resp.status_code == 200:
+        print("Successfully committed schedule to calendar!")
+    else:
+        print("Error committing schedule:", resp.json())
 
 if __name__ == "__main__":
     access_token = get_access_token()
