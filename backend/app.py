@@ -255,15 +255,3 @@ def get_today_events(req: TokenRequest):
     except Exception as e:
         logging.error(f"Failed to get today's events: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/schedule")
-# async def create_schedule(req: ScheduleRequest):
-#     return    
-
-# @app.post("/feedback")
-# async def update_schedule(req: FeedbackRequest):
-#     return
-
-# @app.post("/sync")
-# async def sync_schedule(req: SyncRequest):
-#     return

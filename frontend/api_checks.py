@@ -152,6 +152,3 @@ if __name__ == "__main__":
     # Test interactive scheduling
     test_interactive_scheduling(access_token)
     print()
-    
-    # Uncomment the line below to test creating a test event
-    # test_create_test_event(access_token)
