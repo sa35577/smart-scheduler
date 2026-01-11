@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Smart Scheduler...</title>
+</head>
+<body>
+    <p>Redirecting to app...</p>
+    <script>
+        // Redirect to app's custom URL scheme, preserving all query parameters (code, state, etc.)
+        window.location.replace("com.smart-scheduler://page" + window.location.search);
+    </script>
+</body>
+</html>
+
