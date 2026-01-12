@@ -16,11 +16,29 @@ struct ContentView: View {
     @State private var errorMessage: String?
     @State private var scheduleId: String?
     @State private var currentSchedule: [CalendarEvent] = []
+    @State private var inputMode: InputMode = .speech
+    @State private var typedText: String = ""
+    @FocusState private var isTextFieldFocused: Bool
+    
+    enum InputMode {
+        case speech
+        case text
+    }
     
     init() {
         let authManager = GoogleAuthManager()
         _authManager = State(initialValue: authManager)
         _apiService = State(initialValue: APIService(authManager: authManager))
+    }
+    
+    // Computed property to get the current input text
+    private var currentInputText: String {
+        switch inputMode {
+        case .speech:
+            return speechManager.transcript
+        case .text:
+            return typedText
+        }
     }
     
     var body: some View {
@@ -55,43 +73,79 @@ struct ContentView: View {
                     .padding()
                 } else {
                     // Main Content
-                    // Status Header
-                    Text(speechManager.isRecording ? "Listening to your rant..." : "Smart Scheduler")
-                        .font(.headline)
-                        .foregroundColor(speechManager.isRecording ? .red : .primary)
-                    
-                    // Live Text Display
-                    ScrollView {
-                        Text(speechManager.transcript.isEmpty ? "Tap the mic and start talking about your day." : speechManager.transcript)
-                            .font(.system(size: 20, weight: .medium, design: .rounded))
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    // Input Mode Selector
+                    Picker("Input Mode", selection: $inputMode) {
+                        Text("🎤 Speech").tag(InputMode.speech)
+                        Text("⌨️ Text").tag(InputMode.text)
                     }
-                    .frame(maxHeight: .infinity)
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(20)
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
                     
-                    // Record Button
-                    Button(action: {
-                        if speechManager.isRecording {
-                            speechManager.stopRecording()
-                        } else {
-                            speechManager.startRecording()
+                    // Status Header
+                    Text(inputMode == .speech && speechManager.isRecording ? "Listening to your rant..." : "Smart Scheduler")
+                        .font(.headline)
+                        .foregroundColor(inputMode == .speech && speechManager.isRecording ? .red : .primary)
+                    
+                    // Input Area - Different based on mode
+                    if inputMode == .speech {
+                        // Speech Mode - Live Text Display
+                        ScrollView {
+                            Text(speechManager.transcript.isEmpty ? "Tap the mic and start talking about your day." : speechManager.transcript)
+                                .font(.system(size: 20, weight: .medium, design: .rounded))
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(speechManager.isRecording ? Color.red.opacity(0.2) : Color.blue.opacity(0.2))
-                                .frame(width: 90, height: 90)
-                            
-                            Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(speechManager.isRecording ? .red : .blue)
+                        .frame(maxHeight: .infinity)
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(20)
+                        
+                        // Record Button
+                        Button(action: {
+                            if speechManager.isRecording {
+                                speechManager.stopRecording()
+                            } else {
+                                speechManager.startRecording()
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(speechManager.isRecording ? Color.red.opacity(0.2) : Color.blue.opacity(0.2))
+                                    .frame(width: 90, height: 90)
+                                
+                                Image(systemName: speechManager.isRecording ? "stop.fill" : "mic.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(speechManager.isRecording ? .red : .blue)
+                            }
                         }
+                    } else {
+                        // Text Mode - Text Input Field
+                        TextEditor(text: $typedText)
+                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .padding(8)
+                            .frame(maxHeight: .infinity)
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(20)
+                            .overlay(
+                                Group {
+                                    if typedText.isEmpty {
+                                        VStack {
+                                            HStack {
+                                                Text("Type your schedule request here...")
+                                                    .foregroundColor(.secondary)
+                                                    .padding(.leading, 12)
+                                                    .padding(.top, 16)
+                                                Spacer()
+                                            }
+                                            Spacer()
+                                        }
+                                    }
+                                }
+                            )
+                            .focused($isTextFieldFocused)
                     }
                     
                     // Submit Button (Only shows when not recording and text exists)
-                    if !speechManager.transcript.isEmpty && !speechManager.isRecording {
+                    if !currentInputText.isEmpty && (inputMode == .text || !speechManager.isRecording) {
                         VStack(spacing: 10) {
                             Button(action: sendToBackend) {
                                 HStack {
@@ -180,19 +234,32 @@ struct ContentView: View {
     }
     
     func sendToBackend() {
-        guard !speechManager.transcript.isEmpty else { return }
+        let textToSend = currentInputText
+        guard !textToSend.isEmpty else { return }
         
         isLoading = true
         errorMessage = nil
         
+        // Dismiss keyboard if in text mode
+        if inputMode == .text {
+            isTextFieldFocused = false
+        }
+        
         Task {
             do {
-                let response = try await apiService.generateSchedule(rant: speechManager.transcript)
+                let response = try await apiService.generateSchedule(rant: textToSend)
                 await MainActor.run {
                     scheduleId = response.schedule_id
                     currentSchedule = response.schedule
                     isLoading = false
                     errorMessage = nil
+                    
+                    // Clear input after successful submission
+                    if inputMode == .text {
+                        typedText = ""
+                    } else {
+                        speechManager.transcript = ""
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -216,7 +283,12 @@ struct ContentView: View {
                     isLoading = false
                     errorMessage = "Successfully committed schedule to calendar!"
                     self.scheduleId = nil
-                    speechManager.transcript = ""
+                    // Clear input based on current mode
+                    if inputMode == .text {
+                        typedText = ""
+                    } else {
+                        speechManager.transcript = ""
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -232,6 +304,7 @@ struct ContentView: View {
         scheduleId = nil
         currentSchedule = []
         speechManager.transcript = ""
+        typedText = ""
         errorMessage = nil
     }
 }
