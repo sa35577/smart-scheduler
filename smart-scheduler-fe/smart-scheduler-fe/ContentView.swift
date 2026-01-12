@@ -19,6 +19,12 @@ struct ContentView: View {
     @State private var inputMode: InputMode = .speech
     @State private var typedText: String = ""
     @FocusState private var isTextFieldFocused: Bool
+    @State private var showSchedule = false
+    @State private var isAdjusting = false
+    @State private var adjustmentText: String = ""
+    @State private var showTodaySchedule = false
+    @State private var todayEvents: [CalendarEvent] = []
+    @State private var isLoadingTodayEvents = false
     
     enum InputMode {
         case speech
@@ -146,36 +152,40 @@ struct ContentView: View {
                     
                     // Submit Button (Only shows when not recording and text exists)
                     if !currentInputText.isEmpty && (inputMode == .text || !speechManager.isRecording) {
-                        VStack(spacing: 10) {
-                            Button(action: sendToBackend) {
-                                HStack {
-                                    if isLoading {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    }
-                                    Text(isLoading ? "Processing..." : "Update Schedule")
-                                        .fontWeight(.bold)
+                        Button(action: sendToBackend) {
+                            HStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(15)
+                                Text(isLoading ? "Processing..." : isAdjusting ? "Update Schedule" : "Generate Schedule")
+                                    .fontWeight(.bold)
                             }
-                            .disabled(isLoading)
-                            
-                            if let scheduleId = scheduleId {
-                                Button(action: commitSchedule) {
-                                    Text("Commit to Calendar")
-                                        .fontWeight(.semibold)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(Color.green)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(15)
-                                }
-                                .disabled(isLoading)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(15)
+                        }
+                        .disabled(isLoading)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                    
+                    // Show Schedule Button (if schedule exists and not adjusting)
+                    if let scheduleId = scheduleId, !currentSchedule.isEmpty, !isAdjusting {
+                        Button(action: {
+                            showSchedule = true
+                        }) {
+                            HStack {
+                                Image(systemName: "calendar")
+                                Text("View Schedule")
                             }
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple)
+                            .foregroundColor(.white)
+                            .cornerRadius(15)
                         }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
@@ -199,6 +209,53 @@ struct ContentView: View {
             }
             .padding()
             .navigationTitle("Smart Scheduler")
+            .overlay(alignment: .bottomTrailing) {
+                // Floating button to view today's schedule
+                if authManager.isAuthenticated {
+                    Button(action: loadTodaySchedule) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar")
+                            Text("Today")
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .cornerRadius(25)
+                        .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 2)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+            .sheet(isPresented: $showSchedule) {
+                if let scheduleId = scheduleId {
+                    ScheduleView(
+                        schedule: currentSchedule,
+                        scheduleId: scheduleId,
+                        isPresented: $showSchedule,
+                        onAdjust: {
+                            showSchedule = false
+                            isAdjusting = true
+                            // Pre-fill with adjustment prompt
+                            if inputMode == .text {
+                                typedText = "Adjust the schedule: "
+                                isTextFieldFocused = true
+                            } else {
+                                // Switch to text mode for adjustments
+                                inputMode = .text
+                                typedText = "Adjust the schedule: "
+                                isTextFieldFocused = true
+                            }
+                        },
+                        onCommit: {
+                            commitSchedule()
+                            showSchedule = false
+                        }
+                    )
+                }
+            }
         }
     }
     
@@ -247,12 +304,22 @@ struct ContentView: View {
         
         Task {
             do {
-                let response = try await apiService.generateSchedule(rant: textToSend)
+                let response: ScheduleResponse
+                
+                if isAdjusting, let scheduleId = scheduleId {
+                    // Provide feedback to adjust existing schedule
+                    response = try await apiService.provideFeedback(scheduleId: scheduleId, feedback: textToSend)
+                } else {
+                    // Generate new schedule
+                    response = try await apiService.generateSchedule(rant: textToSend)
+                }
+                
                 await MainActor.run {
                     scheduleId = response.schedule_id
                     currentSchedule = response.schedule
                     isLoading = false
                     errorMessage = nil
+                    isAdjusting = false
                     
                     // Clear input after successful submission
                     if inputMode == .text {
@@ -260,10 +327,15 @@ struct ContentView: View {
                     } else {
                         speechManager.transcript = ""
                     }
+                    
+                    // Automatically show the schedule
+                    if !response.schedule.isEmpty {
+                        showSchedule = true
+                    }
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to generate schedule: \(error.localizedDescription)"
+                    errorMessage = "Failed to \(isAdjusting ? "adjust" : "generate") schedule: \(error.localizedDescription)"
                     isLoading = false
                 }
             }
@@ -283,6 +355,8 @@ struct ContentView: View {
                     isLoading = false
                     errorMessage = "Successfully committed schedule to calendar!"
                     self.scheduleId = nil
+                    self.currentSchedule = []
+                    self.showSchedule = false
                     // Clear input based on current mode
                     if inputMode == .text {
                         typedText = ""
