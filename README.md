@@ -29,7 +29,7 @@ Check out the demo video on [YouTube](https://youtu.be/5lxNRZoPjZU). It is based
 
 3. **Install dependencies:**
    ```bash
-   pip install openai python-dotenv google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+   pip install -r requirements.txt
    ```
 
 4. **Set up environment variables:**

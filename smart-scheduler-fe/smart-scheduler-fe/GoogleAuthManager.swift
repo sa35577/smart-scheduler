@@ -14,6 +14,7 @@ import CryptoKit
 class GoogleAuthManager: NSObject {
     private let keychainService = "com.smart-scheduler.google-auth"
     private let accessTokenKey = "google_access_token"
+    private let idTokenKey = "google_id_token"
     private let refreshTokenKey = "google_refresh_token"
     private let tokenExpiryKey = "google_token_expiry"
     
@@ -31,7 +32,9 @@ class GoogleAuthManager: NSObject {
     private let callbackURLScheme: String = "com.smart-scheduler" // Custom scheme for app callback
     private let scopes = [
         "https://www.googleapis.com/auth/calendar.events",
-        "https://www.googleapis.com/auth/calendar.readonly"
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "openid",  // Required to get id_token (JWT) with user email
+        "https://www.googleapis.com/auth/userinfo.email"  // Explicitly request email scope
     ]
     
     var isAuthenticated: Bool {
@@ -40,6 +43,10 @@ class GoogleAuthManager: NSObject {
     
     var accessToken: String? {
         return getAccessToken()
+    }
+    
+    var idToken: String? {
+        return getIdToken()
     }
     
     private var isTokenExpired: Bool {
@@ -77,6 +84,7 @@ class GoogleAuthManager: NSObject {
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "include_granted_scopes", value: "true"),
             URLQueryItem(name: "scope", value: scopes.joined(separator: " ")),
             URLQueryItem(name: "access_type", value: "offline"), // Important: get refresh token
             URLQueryItem(name: "prompt", value: "consent"), // Force consent to get refresh token
@@ -197,6 +205,12 @@ class GoogleAuthManager: NSObject {
         
         // Store tokens securely
         saveAccessToken(tokenResponse.access_token)
+        if let idToken = tokenResponse.id_token {
+            print("✅ Received id_token from Google (length: \(idToken.count))")
+            saveIdToken(idToken)  // Store id_token for backend to decode
+        } else {
+            print("⚠️ No id_token in response - check that 'openid' scope is requested")
+        }
         if let refreshToken = tokenResponse.refresh_token {
             saveRefreshToken(refreshToken)
         }
@@ -209,6 +223,7 @@ class GoogleAuthManager: NSObject {
     /// Sign out and clear stored tokens
     func signOut() {
         deleteAccessToken()
+        deleteIdToken()
         deleteRefreshToken()
         deleteTokenExpiry()
     }
@@ -262,6 +277,18 @@ class GoogleAuthManager: NSObject {
     
     private func deleteAccessToken() {
         deleteKeychainValue(key: accessTokenKey)
+    }
+    
+    private func getIdToken() -> String? {
+        return getKeychainValue(key: idTokenKey)
+    }
+    
+    private func saveIdToken(_ token: String) {
+        saveKeychainValue(key: idTokenKey, value: token)
+    }
+    
+    private func deleteIdToken() {
+        deleteKeychainValue(key: idTokenKey)
     }
     
     private func getRefreshToken() -> String? {
@@ -392,6 +419,7 @@ struct TokenResponse: Codable {
     let refresh_token: String?
     let expires_in: Int?
     let token_type: String?
+    let id_token: String?  // JWT containing user info (email, etc.)
 }
 
 #if os(macOS)

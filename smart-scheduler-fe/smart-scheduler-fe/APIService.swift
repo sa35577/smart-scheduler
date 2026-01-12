@@ -23,16 +23,24 @@ class APIService {
     /// Generate a schedule from a user's rant/description
     func generateSchedule(rant: String) async throws -> ScheduleResponse {
         let accessToken = try await authManager.getValidAccessToken()
+        let idToken = authManager.idToken
         
-        let request = ScheduleRequest(rant: rant, access_token: accessToken)
+        if idToken != nil {
+            print("✅ Sending id_token with request (length: \(idToken!.count))")
+        } else {
+            print("⚠️ No id_token available - user may need to re-authenticate")
+        }
+        
+        let request = ScheduleRequest(rant: rant, access_token: accessToken, id_token: idToken)
         return try await post("/schedule/generate", body: request)
     }
     
     /// Provide feedback to adjust the current schedule
     func provideFeedback(scheduleId: String, feedback: String) async throws -> ScheduleResponse {
         let accessToken = try await authManager.getValidAccessToken()
+        let idToken = authManager.idToken
         
-        let request = FeedbackRequest(schedule_id: scheduleId, feedback: feedback, access_token: accessToken)
+        let request = FeedbackRequest(schedule_id: scheduleId, feedback: feedback, access_token: accessToken, id_token: idToken)
         return try await post("/schedule/feedback", body: request)
     }
     
@@ -57,16 +65,18 @@ class APIService {
     /// Get today's events
     func getTodayEvents() async throws -> TodayEventsResponse {
         let accessToken = try await authManager.getValidAccessToken()
+        let idToken = authManager.idToken
         
-        let request = TokenRequest(access_token: accessToken)
+        let request = TokenRequest(access_token: accessToken, id_token: idToken)
         return try await post("/calendar/today", body: request)
     }
     
     /// Get current date
     func getCurrentDate() async throws -> CurrentDateResponse {
         let accessToken = try await authManager.getValidAccessToken()
+        let idToken = authManager.idToken
         
-        let request = TokenRequest(access_token: accessToken)
+        let request = TokenRequest(access_token: accessToken, id_token: idToken)
         return try await post("/calendar/current-date", body: request)
     }
     
@@ -121,12 +131,14 @@ class APIService {
 struct ScheduleRequest: Codable {
     let rant: String
     let access_token: String
+    let id_token: String?  // JWT with user email for backend logging
 }
 
 struct FeedbackRequest: Codable {
     let schedule_id: String
     let feedback: String
     let access_token: String
+    let id_token: String?  // JWT with user email for backend logging
 }
 
 struct CommitRequest: Codable {
@@ -136,6 +148,7 @@ struct CommitRequest: Codable {
 
 struct TokenRequest: Codable {
     let access_token: String
+    let id_token: String?  // JWT with user email for backend logging
 }
 
 struct ScheduleResponse: Codable {
