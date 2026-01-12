@@ -73,9 +73,31 @@ class SchedulerPipeline:
         current_date = self.calendar_manager.get_current_date()
         schedule = self.prompt_generator.generate_schedule(events, tasks, current_date)
         
+        # Track which existing events were modified
+        existing_event_map = {e.summary: e for e in events if e.already_in_calendar}
+        
+        for event in schedule:
+            if event.already_in_calendar:
+                # Check if this existing event was moved
+                if event.summary in existing_event_map:
+                    original = existing_event_map[event.summary]
+                    # Compare times to detect if moved
+                    if event.start != original.start or event.end != original.end:
+                        event.is_modified = True
+                        event.original_start = original.start
+                        event.original_end = original.end
+                        event.event_id = original.event_id  # Preserve event ID
+                    else:
+                        # Unchanged, preserve original info
+                        event.event_id = original.event_id
+                        event.is_modified = False
+        
         print(f"Found {len(schedule)} scheduled events:")
         for event in schedule:
-            print(f"Event: {event.summary}: {event.start} to {event.end}")
+            status = "NEW" if not event.already_in_calendar else ("MODIFIED" if event.is_modified else "EXISTING")
+            print(f"Event [{status}]: {event.summary}: {event.start} to {event.end}")
+            if event.is_modified:
+                print(f"    Moved from: {event.original_start} to {event.original_end}")
             if event.description:
                 print(f"    Description: {event.description}")
         

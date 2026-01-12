@@ -10,10 +10,22 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import logging
 import uuid
+import os
 from datetime import datetime, timedelta
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging to file and console
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("logs/scheduler.log"),
+        logging.StreamHandler()
+    ]
+)
 
 app = FastAPI()
 
@@ -118,10 +130,87 @@ def provide_feedback(req: FeedbackRequest):
         scheduler_pipeline = session["scheduler_pipeline"]
         current_schedule = session["current_schedule"]
         
+        # Log current schedule state before feedback
+        logging.info("=" * 80)
+        logging.info(f"📝 FEEDBACK RECEIVED: '{req.feedback}'")
+        logging.info("=" * 80)
+        logging.info(f"📅 CURRENT SCHEDULE ({len(current_schedule)} events):")
+        for i, event in enumerate(current_schedule, 1):
+            status = "NEW" if not event.already_in_calendar else ("MODIFIED" if event.is_modified else "EXISTING")
+            logging.info(f"  [{i}] [{status}] {event.summary}")
+            logging.info(f"      Time: {event.start} → {event.end}")
+            logging.info(f"      already_in_calendar: {event.already_in_calendar}")
+            logging.info(f"      is_modified: {event.is_modified}")
+            logging.info(f"      event_id: {event.event_id}")
+            if event.original_start:
+                logging.info(f"      original_start: {event.original_start}")
+                logging.info(f"      original_end: {event.original_end}")
+        
         # Apply feedback
         updated_schedule = scheduler_pipeline.prompt_generator.adjust_schedule_with_feedback(
             current_schedule, req.feedback
         )
+        
+        # Log LLM response
+        logging.info("=" * 80)
+        logging.info(f"🤖 LLM RESPONSE ({len(updated_schedule)} events):")
+        for i, event in enumerate(updated_schedule, 1):
+            logging.info(f"  [{i}] {event.summary}")
+            logging.info(f"      Time: {event.start} → {event.end}")
+            logging.info(f"      already_in_calendar: {event.already_in_calendar}")
+            logging.info(f"      is_modified: {getattr(event, 'is_modified', 'NOT SET')}")
+            logging.info(f"      event_id: {event.event_id}")
+            if hasattr(event, 'original_start') and event.original_start:
+                logging.info(f"      original_start: {event.original_start}")
+                logging.info(f"      original_end: {event.original_end}")
+        
+        # Post-process: Match events and detect moves
+        logging.info("=" * 80)
+        logging.info("🔍 POST-PROCESSING: Matching events and detecting moves...")
+        existing_event_map = {e.event_id: e for e in current_schedule if e.event_id and e.already_in_calendar}
+        existing_summary_map = {e.summary.lower(): e for e in current_schedule if e.already_in_calendar}
+        
+        for event in updated_schedule:
+            matched = False
+            # Try to match by event_id first
+            if event.event_id and event.event_id in existing_event_map:
+                original = existing_event_map[event.event_id]
+                matched = True
+                logging.info(f"  ✓ Matched '{event.summary}' by event_id: {event.event_id}")
+            # Try to match by summary
+            elif event.summary.lower() in existing_summary_map:
+                original = existing_summary_map[event.summary.lower()]
+                matched = True
+                logging.info(f"  ✓ Matched '{event.summary}' by summary")
+                # Preserve event_id if we matched by summary
+                if original.event_id:
+                    event.event_id = original.event_id
+                    logging.info(f"    → Preserved event_id: {event.event_id}")
+            
+            if matched:
+                event.already_in_calendar = True
+                # Check if times changed
+                if event.start != original.start or event.end != original.end:
+                    event.is_modified = True
+                    event.original_start = original.start
+                    event.original_end = original.end
+                    logging.info(f"    → DETECTED MOVE: {original.start} → {event.start}")
+                else:
+                    event.is_modified = False
+                    logging.info(f"    → No time change, keeping as existing")
+            else:
+                if event.already_in_calendar:
+                    logging.warning(f"  ⚠️  Event '{event.summary}' marked as already_in_calendar but couldn't match to existing event")
+                else:
+                    logging.info(f"  ✓ '{event.summary}' is a new event")
+        
+        # Log final state
+        logging.info("=" * 80)
+        logging.info(f"✅ FINAL SCHEDULE STATE ({len(updated_schedule)} events):")
+        for i, event in enumerate(updated_schedule, 1):
+            status = "NEW" if not event.already_in_calendar else ("MODIFIED" if event.is_modified else "EXISTING")
+            logging.info(f"  [{i}] [{status}] {event.summary} ({event.start} → {event.end})")
+        logging.info("=" * 80)
         
         # Update session
         session["current_schedule"] = updated_schedule
@@ -153,14 +242,29 @@ def commit_schedule(req: CommitRequest):
         calendar_manager = session["calendar_manager"]
         current_schedule = session["current_schedule"]
         
-        # Add events to calendar
+        # Add/update events in calendar
         calendar_manager.add_events_to_calendar(current_schedule)
+        
+        # Count new vs modified events for message
+        new_count = sum(1 for e in current_schedule if not e.already_in_calendar)
+        modified_count = sum(1 for e in current_schedule if e.is_modified)
+        existing_count = sum(1 for e in current_schedule if e.already_in_calendar and not e.is_modified)
+        
+        message_parts = []
+        if new_count > 0:
+            message_parts.append(f"added {new_count} new event{'s' if new_count != 1 else ''}")
+        if modified_count > 0:
+            message_parts.append(f"moved {modified_count} existing event{'s' if modified_count != 1 else ''}")
+        if existing_count > 0:
+            message_parts.append(f"{existing_count} unchanged")
+        
+        message = f"Successfully {' and '.join(message_parts)} to calendar"
         
         # Clean up session
         del sessions[req.schedule_id]
         
         return {
-            "message": f"Successfully added {len(current_schedule)} events to calendar",
+            "message": message,
             "schedule": [event.dict() for event in current_schedule]
         }
         

@@ -71,11 +71,15 @@ def list_today_events(service=None) -> list[Event]:
         logging.info(f" • {evt['summary']} — {start_fmt} to {end_fmt}")
         
         # Store ISO8601 format for API (consistent with schedule generation)
+        # Include event_id so we can track and update events if needed
         results.append(Event(
             summary=evt['summary'], 
             start=start_dt.isoformat(), 
             end=end_dt.isoformat(),
-            already_in_calendar=True
+            already_in_calendar=True,
+            event_id=evt.get('id'),  # Store Google Calendar event ID
+            location=evt.get('location'),
+            description=evt.get('description')
         ))
 
     return results

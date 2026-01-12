@@ -86,8 +86,15 @@ struct ScheduleView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
+                    Button(action: {
                         isPresented = false
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark.circle.fill")
+                            Text("Cancel")
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundColor(.red)
                     }
                 }
             }
@@ -122,29 +129,49 @@ struct ScheduleEventRow: View {
             
             // Event details
             VStack(alignment: .leading, spacing: 6) {
-                Text(event.summary)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                HStack(spacing: 4) {
-                    Text(formatTime(event.start))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("→")
-                        .foregroundColor(.secondary)
-                        .font(.caption)
-                    Text(formatTime(event.end))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                HStack {
+                    Text(event.summary)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    // Status badge
+                    Group {
+                        switch event.eventStatus {
+                        case .new:
+                            Label("New", systemImage: "plus.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.blue)
+                        case .existing:
+                            Label("Existing", systemImage: "checkmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                        case .modified:
+                            Label("Moved", systemImage: "arrow.right.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        event.eventStatus == .new ? Color.blue.opacity(0.1) :
+                        event.eventStatus == .existing ? Color.green.opacity(0.1) :
+                        Color.orange.opacity(0.1)
+                    )
+                    .cornerRadius(8)
                 }
                 
-                if let alreadyInCalendar = event.already_in_calendar, alreadyInCalendar {
+                // Show original time if event was moved
+                if event.eventStatus == .modified,
+                   let originalStart = event.original_start,
+                   let originalEnd = event.original_end {
                     HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("Already in calendar")
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                        Text("Was: \(formatTime(originalStart)) → \(formatTime(originalEnd))")
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -182,9 +209,9 @@ struct ScheduleEventRow: View {
 #Preview {
     ScheduleView(
         schedule: [
-            CalendarEvent(summary: "Morning Meeting", start: "2025-01-15T09:00:00Z", end: "2025-01-15T10:00:00Z", already_in_calendar: false),
-            CalendarEvent(summary: "Lunch Break", start: "2025-01-15T12:00:00Z", end: "2025-01-15T13:00:00Z", already_in_calendar: true),
-            CalendarEvent(summary: "Project Review", start: "2025-01-15T14:00:00Z", end: "2025-01-15T15:30:00Z", already_in_calendar: false)
+            CalendarEvent(summary: "Morning Meeting", start: "2025-01-15T09:00:00Z", end: "2025-01-15T10:00:00Z", already_in_calendar: false, event_id: nil, original_start: nil, original_end: nil, is_modified: false),
+            CalendarEvent(summary: "Lunch Break", start: "2025-01-15T12:00:00Z", end: "2025-01-15T13:00:00Z", already_in_calendar: true, event_id: "test-id-1", original_start: nil, original_end: nil, is_modified: false),
+            CalendarEvent(summary: "Project Review", start: "2025-01-15T15:00:00Z", end: "2025-01-15T16:30:00Z", already_in_calendar: true, event_id: "test-id-2", original_start: "2025-01-15T14:00:00Z", original_end: "2025-01-15T15:00:00Z", is_modified: true)
         ],
         scheduleId: "test-id",
         isPresented: .constant(true),

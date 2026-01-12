@@ -162,6 +162,26 @@ struct CalendarEvent: Codable {
     let start: String
     let end: String
     let already_in_calendar: Bool?
+    let event_id: String?
+    let original_start: String?
+    let original_end: String?
+    let is_modified: Bool?
+    
+    var eventStatus: EventStatus {
+        if let alreadyInCalendar = already_in_calendar, alreadyInCalendar {
+            if let isModified = is_modified, isModified {
+                return .modified
+            }
+            return .existing
+        }
+        return .new
+    }
+}
+
+enum EventStatus {
+    case new
+    case existing
+    case modified
 }
 
 struct ErrorResponse: Codable {

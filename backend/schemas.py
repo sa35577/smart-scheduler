@@ -12,6 +12,10 @@ class Event(BaseModel):
     location: Optional[str] = None
     description: Optional[str] = None
     already_in_calendar: Optional[bool] = True
+    event_id: Optional[str] = None  # Google Calendar event ID for existing events
+    original_start: Optional[str] = None  # Original start time if event was moved
+    original_end: Optional[str] = None  # Original end time if event was moved
+    is_modified: Optional[bool] = False  # True if this existing event was moved/modified
 
     def __str__(self):
         return f"{self.summary} from {self.start} to {self.end}. Already in calendar: {self.already_in_calendar}"

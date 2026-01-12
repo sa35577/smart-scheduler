@@ -6,6 +6,7 @@ from service_helper import get_service
 from schemas import Event
 from list_today import list_today_events, get_calendar_timezone
 from create_event import create_events
+from update_event import update_event
 
 
 class CalendarManager:
@@ -55,13 +56,57 @@ class CalendarManager:
             raise
     
     def add_events_to_calendar(self, events: List[Event]) -> None:
-        """Add multiple events to the calendar."""
+        """Add or update events in the calendar."""
         try:
-            logging.info(f"Adding {len(events)} events to calendar")
-            create_events(events, service=self.service)
-            logging.info("Events added to calendar successfully")
+            logging.info("=" * 80)
+            logging.info(f"📅 PROCESSING {len(events)} EVENTS FOR CALENDAR:")
+            new_events = []
+            updated_events = []
+            skipped_events = []
+            
+            for i, event in enumerate(events, 1):
+                logging.info(f"  [{i}] Processing: {event.summary}")
+                logging.info(f"      already_in_calendar: {event.already_in_calendar}")
+                logging.info(f"      is_modified: {event.is_modified}")
+                logging.info(f"      event_id: {event.event_id}")
+                
+                if event.already_in_calendar and event.is_modified and event.event_id:
+                    # Update existing event that was moved/modified
+                    logging.info(f"      → ACTION: UPDATE (event was moved)")
+                    logging.info(f"      → Old time: {getattr(event, 'original_start', 'N/A')} → {getattr(event, 'original_end', 'N/A')}")
+                    logging.info(f"      → New time: {event.start} → {event.end}")
+                    update_event(event, service=self.service)
+                    updated_events.append(event)
+                elif not event.already_in_calendar:
+                    # Create new event
+                    logging.info(f"      → ACTION: CREATE (new event)")
+                    new_events.append(event)
+                else:
+                    # If already_in_calendar=True but not modified, skip (unchanged)
+                    logging.info(f"      → ACTION: SKIP (unchanged existing event)")
+                    skipped_events.append(event)
+            
+            logging.info("=" * 80)
+            if new_events:
+                logging.info(f"🆕 CREATING {len(new_events)} NEW EVENTS:")
+                for event in new_events:
+                    logging.info(f"  - {event.summary} ({event.start} → {event.end})")
+                create_events(new_events, service=self.service)
+            
+            if updated_events:
+                logging.info(f"🔄 UPDATED {len(updated_events)} EXISTING EVENTS:")
+                for event in updated_events:
+                    logging.info(f"  - {event.summary} (ID: {event.event_id})")
+            
+            if skipped_events:
+                logging.info(f"⏭️  SKIPPED {len(skipped_events)} UNCHANGED EVENTS:")
+                for event in skipped_events:
+                    logging.info(f"  - {event.summary} (ID: {event.event_id})")
+            
+            logging.info(f"✅ Successfully processed {len(new_events)} new, {len(updated_events)} updated, {len(skipped_events)} skipped")
+            logging.info("=" * 80)
         except Exception as e:
-            logging.error(f"Failed to add events to calendar: {e}")
+            logging.error(f"Failed to add/update events in calendar: {e}")
             raise
     
     def get_current_date(self) -> str:

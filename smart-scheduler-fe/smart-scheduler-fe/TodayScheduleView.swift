@@ -168,8 +168,8 @@ struct TodayEventRow: View {
 #Preview {
     TodayScheduleView(
         events: [
-            CalendarEvent(summary: "Team Standup", start: "2025-01-15T09:00:00Z", end: "2025-01-15T09:30:00Z", already_in_calendar: true),
-            CalendarEvent(summary: "Lunch", start: "2025-01-15T12:00:00Z", end: "2025-01-15T13:00:00Z", already_in_calendar: true)
+            CalendarEvent(summary: "Team Standup", start: "2025-01-15T09:00:00Z", end: "2025-01-15T09:30:00Z", already_in_calendar: true, event_id: nil, original_start: nil, original_end: nil, is_modified: false),
+            CalendarEvent(summary: "Lunch", start: "2025-01-15T12:00:00Z", end: "2025-01-15T13:00:00Z", already_in_calendar: true, event_id: nil, original_start: nil, original_end: nil, is_modified: false)
         ],
         isLoading: false,
         isPresented: .constant(true)
