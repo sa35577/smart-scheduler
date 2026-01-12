@@ -13,6 +13,7 @@ struct ScheduleView: View {
     @Binding var isPresented: Bool
     let onAdjust: () -> Void
     let onCommit: () -> Void
+    let onCancel: () -> Void
     @State private var isLoading = false
     
     var body: some View {
@@ -87,6 +88,7 @@ struct ScheduleView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
+                        onCancel()
                         isPresented = false
                     }) {
                         HStack(spacing: 4) {
@@ -216,6 +218,7 @@ struct ScheduleEventRow: View {
         scheduleId: "test-id",
         isPresented: .constant(true),
         onAdjust: {},
-        onCommit: {}
+        onCommit: {},
+        onCancel: {}
     )
 }

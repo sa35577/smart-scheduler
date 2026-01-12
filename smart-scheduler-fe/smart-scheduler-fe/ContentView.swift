@@ -192,11 +192,18 @@ struct ContentView: View {
                     
                     // Sign Out Button
                     Button(action: signOut) {
-                        Text("Sign Out")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        HStack(spacing: 6) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("Sign Out")
+                        }
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.red)
+                        .cornerRadius(25)
                     }
-                    .padding(.top)
+                    .padding(.top, 20)
                 }
                 
                 // Error Message
@@ -252,6 +259,18 @@ struct ContentView: View {
                         onCommit: {
                             commitSchedule()
                             showSchedule = false
+                        },
+                        onCancel: {
+                            // Clear the proposed schedule and revert to old state
+                            self.scheduleId = nil
+                            self.currentSchedule = []
+                            self.isAdjusting = false
+                            // Clear input
+                            if inputMode == .text {
+                                typedText = ""
+                            } else {
+                                speechManager.transcript = ""
+                            }
                         }
                     )
                 }
