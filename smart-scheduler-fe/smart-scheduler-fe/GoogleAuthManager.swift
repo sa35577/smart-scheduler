@@ -21,23 +21,21 @@ class GoogleAuthManager: NSObject {
     // Retain the authentication session to prevent deallocation
     private var authSession: ASWebAuthenticationSession?
     
-    // OAuth2 configuration - you'll need to get these from Google Cloud Console
-    // IMPORTANT: Create a "Web application" OAuth client (not iOS/macOS)
-    // Add redirect URI: https://satarora.com/oauth/callback (Google requires HTTPS for sensitive scopes)
-    // The HTML page at that URL will redirect to the custom URL scheme, which ASWebAuthenticationSession will intercept
-    // NOTE: Web application clients require client_secret for token exchange, even with PKCE
-    private let clientId: String = "167925471103-4q9hk60i44ljfj7lcl991l1lvd324puk.apps.googleusercontent.com" // Replace with your Web application client ID
-    private let clientSecret: String = "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" // Get this from Google Cloud Console > Credentials > Your OAuth Client
-    private let redirectURI: String = "https://satarora.com/oauth/callback" // Replace with your actual domain
-    private let callbackURLScheme: String = "com.smart-scheduler" // Custom scheme for app callback
-    private let scopes = [
-        "https://www.googleapis.com/auth/calendar.events",
-        "https://www.googleapis.com/auth/calendar.readonly",
-        "openid",  // Required to get id_token (JWT) with user email
-        "https://www.googleapis.com/auth/userinfo.email"  // Explicitly request email scope
-    ]
+    // OAuth2 configuration - loaded from OAuthConfig
+    // See OAuthConfig.swift to update these values
+    private let clientId = OAuthConfig.clientId
+    private let redirectURI = OAuthConfig.redirectURI
+    private let callbackURLScheme = OAuthConfig.callbackURLScheme
+    private let scopes = OAuthConfig.scopes
+    
+    // Track authentication state for SwiftUI observation
+    // This property changes when tokens are saved/deleted, triggering UI updates
+    // Accessing this in isAuthenticated ensures SwiftUI observes changes
+    private var _authStateVersion: Int = 0
     
     var isAuthenticated: Bool {
+        // Access _authStateVersion to ensure SwiftUI observes this computed property
+        _ = _authStateVersion
         return accessToken != nil && !isTokenExpired
     }
     
@@ -74,7 +72,7 @@ class GoogleAuthManager: NSObject {
     
     /// Start the OAuth2 flow using ASWebAuthenticationSession with PKCE
     func authenticate() async throws {
-        // Generate PKCE parameters for secure OAuth (no client_secret needed)
+        // Generate PKCE parameters for secure OAuth (iOS clients don't use client_secret)
         let codeVerifier = generateCodeVerifier()
         let codeChallenge = generateCodeChallenge(verifier: codeVerifier)
         
@@ -173,7 +171,7 @@ class GoogleAuthManager: NSObject {
         bodyComponents.queryItems = [
             URLQueryItem(name: "code", value: code),
             URLQueryItem(name: "client_id", value: clientId),
-            URLQueryItem(name: "client_secret", value: clientSecret), // Required for Web application clients
+            // iOS clients don't require client_secret - PKCE provides security
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "grant_type", value: "authorization_code"),
             URLQueryItem(name: "code_verifier", value: codeVerifier) // PKCE parameter
@@ -184,7 +182,7 @@ class GoogleAuthManager: NSObject {
         print("📤 Request URL: \(tokenURL.absoluteString)")
         print("📤 Redirect URI: \(redirectURI)")
         print("📤 Client ID: \(clientId.prefix(20))...")
-        print("📤 Client Secret: \(clientSecret.isEmpty ? "NOT SET" : "SET (hidden)")")
+        print("📤 Using PKCE (no client_secret needed for iOS clients)")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -218,6 +216,8 @@ class GoogleAuthManager: NSObject {
             let expiryDate = Date().addingTimeInterval(TimeInterval(expiresIn))
             saveTokenExpiry(expiryDate)
         }
+        // Update auth state to trigger SwiftUI observation
+        _authStateVersion += 1
     }
     
     /// Sign out and clear stored tokens
@@ -226,6 +226,8 @@ class GoogleAuthManager: NSObject {
         deleteIdToken()
         deleteRefreshToken()
         deleteTokenExpiry()
+        // Update auth state to trigger SwiftUI observation
+        _authStateVersion += 1
     }
     
     // MARK: - Private Methods

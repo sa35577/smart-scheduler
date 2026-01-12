@@ -20,21 +20,19 @@ The app uses OAuth2 to authenticate with Google Calendar. The authentication flo
 3. Navigate to **APIs & Services** > **Credentials**
 4. Click **Create Credentials** > **OAuth 2.0 Client ID**
 
-### 2. Configure OAuth Client (IMPORTANT: Use "Web application")
+### 2. Configure OAuth Client (IMPORTANT: Use "iOS")
 
-**⚠️ Important:** Since we're using `ASWebAuthenticationSession` with redirect URIs, you need to create a **"Web application"** OAuth client, NOT an iOS or macOS client.
+**✅ Important:** Create an **"iOS"** OAuth client. iOS clients don't require client secrets and use PKCE for security.
 
-1. Application type: **Web application**
-2. Name: Smart Scheduler (or any name you prefer)
-3. **Authorized redirect URIs**: Add the following:
-   - `https://satarora.com/oauth/callback` (replace with your actual domain)
-   
-   **Why HTTPS domain?** Google requires HTTPS for sensitive scopes (Calendar access). You'll host an HTML page at this URL that redirects to your app's custom URL scheme. `ASWebAuthenticationSession` will intercept the custom scheme redirect.
-   
-4. Save the **Client ID** and **Client Secret** (you'll need both)
-   - **Note**: Even though we use PKCE, Google's "Web application" OAuth clients still require the client_secret for token exchange
-   - This is a limitation of using Web application clients for mobile apps
-   - For better security, consider using a backend proxy for token exchange (see Security Considerations below)
+1. Application type: **iOS**
+2. Name: Smart Scheduler iOS (or any name you prefer)
+3. **Bundle ID**: Enter your app's bundle ID (e.g., `sat.smart-scheduler-fe` - must match Xcode exactly)
+4. **App Store ID**: (Optional) Leave blank if not published yet
+5. Save the **Client ID** and note the **iOS URL scheme** (you'll need both!)
+   - iOS clients don't have client secrets - they rely on PKCE for security
+   - Google will auto-generate an iOS URL scheme (shown in "Additional information" section)
+   - The iOS URL scheme will be in format: `com.googleusercontent.apps.{CLIENT_ID_PART}`
+   - You'll use this iOS URL scheme in your code and Xcode configuration
 
 ### 3. Configure OAuth Consent Screen
 
@@ -51,86 +49,71 @@ The app uses OAuth2 to authenticate with Google Calendar. The authentication flo
 
 ### 4. Configure URL Scheme in Xcode
 
+**⚠️ Important:** For iOS OAuth clients, you must use Google's auto-generated iOS URL scheme (shown in Google Cloud Console as "iOS URL scheme"), NOT a custom one.
+
 1. Open your Xcode project
 2. Select your app target
 3. Go to **Info** tab
 4. Under **URL Types**, click **+** to add a new URL type:
-   - **Identifier**: `com.smart-scheduler.oauth`
-   - **URL Schemes**: `com.smart-scheduler`
+   - **Identifier**: `com.google.oauth`
+   - **URL Schemes**: `com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo` (use YOUR iOS URL scheme from Google Cloud Console)
    - **Role**: Editor
 
-This is the custom URL scheme that `ASWebAuthenticationSession` will use to redirect back to your app after authentication. Note: This is different from the redirect URI in Google Cloud Console (which must be HTTP/HTTPS).
+**How to find your iOS URL scheme:**
+- In Google Cloud Console, open your iOS OAuth client
+- Look for the "iOS URL scheme" field in the "Additional information" section
+- It will be in the format: `com.googleusercontent.apps.{CLIENT_ID_PART}`
+- Copy this exact value and use it as your URL Scheme in Xcode
 
-### 5. Update Client ID and Secret in Code
+This URL scheme is what `ASWebAuthenticationSession` will use to redirect back to your app after authentication.
 
-1. Open `GoogleAuthManager.swift`
+### 5. Update Client ID and iOS URL Scheme in Code
+
+1. Open `OAuthConfig.swift` (configuration is now separated from the main auth manager)
 2. Find these lines:
    ```swift
-   private let clientId: String = "YOUR_CLIENT_ID_HERE"
-   private let clientSecret: String = "YOUR_CLIENT_SECRET_HERE"
+   static let clientId = "YOUR_IOS_CLIENT_ID_HERE"
+   static let iosURLScheme = "YOUR_IOS_URL_SCHEME_HERE"
    ```
-3. Replace both placeholders with your actual values from step 2
+3. Replace with your values from Google Cloud Console:
+   - **Client ID**: Copy from "Client ID" field
+   - **iOS URL scheme**: Copy from "iOS URL scheme" field (in Additional information section)
 
 **Example:**
 ```swift
-private let clientId: String = "123456789-abcdefghijklmnop.apps.googleusercontent.com"
-private let clientSecret: String = "GOCSPX-abcdefghijklmnopqrstuvwxyz"
+static let clientId = "167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo.apps.googleusercontent.com"
+static let iosURLScheme = "com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo"
 ```
 
-**⚠️ Security Note**: Storing the client_secret in your app is not ideal for security. Consider:
-- Using a backend proxy to handle token exchange (more secure)
-- Or accepting this limitation for development/testing
+**Note:** The `redirectURI` and `callbackURLScheme` are automatically derived from `iosURLScheme`, so you only need to update the two values above.
 
-### 6. Set Up HTML Redirect Page
+**✅ Security Note**: iOS OAuth clients don't require client secrets! The client ID is safe to embed in your app - it's meant to be public. Security is provided by PKCE (Proof Key for Code Exchange).
 
-You need to host an HTML page at your redirect URI that redirects to your app's custom URL scheme.
+**✅ Better Organization**: Configuration values are now in a separate `OAuthConfig.swift` file, making it easier to:
+- Update values without touching the main auth logic
+- Support different environments (dev/staging/prod) in the future
+- Keep configuration separate from implementation
 
-1. **Create the HTML file** (`oauth/callback/index.html` or `oauth/callback.html`):
-   ```html
-   <!DOCTYPE html>
-   <html>
-   <head>
-       <title>Redirecting...</title>
-   </head>
-   <body>
-       <script>
-           // Redirect to app's custom URL scheme, preserving query parameters
-           window.location.replace("com.smart-scheduler://page" + window.location.search);
-       </script>
-       <p>Redirecting to app...</p>
-   </body>
-   </html>
-   ```
+### 6. Verify Redirect URI Configuration
 
-2. **Host it** at your redirect URI (e.g., `https://satarora.com/oauth/callback`)
-   - GitHub Pages, Netlify, Vercel, or your own server
-   - Must be accessible via HTTPS
-
-3. **Update the redirect URI** in `GoogleAuthManager.swift`:
-   ```swift
-   private let redirectURI: String = "https://satarora.com/oauth/callback"
-   ```
-
-### 7. Verify Redirect URI Configuration
-
-**Important distinction:**
-- **Google Cloud Console redirect URI**: `https://satarora.com/oauth/callback` (must be HTTPS for sensitive scopes)
-- **HTML page redirects to**: `com.smart-scheduler://page?code=...` (custom scheme)
-- **App callback URL scheme**: `com.smart-scheduler` (configured in Xcode)
+**For iOS OAuth clients:**
+- **Google Cloud Console iOS URL scheme**: `com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo` (auto-generated by Google)
+- **App redirect URI**: `com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo:/oauth/callback` (used in code)
+- **App callback URL scheme**: `com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo` (configured in Xcode)
+- **No HTML redirect page needed!** iOS clients use Google's auto-generated URL scheme.
 
 Make sure:
 
-1. ✅ The redirect URI `https://satarora.com/oauth/callback` is added in Google Cloud Console (step 2)
-2. ✅ The HTML redirect page is hosted and accessible
-3. ✅ The URL scheme `com.smart-scheduler` is configured in Xcode (step 4)
-4. ✅ The `redirectURI` in `GoogleAuthManager.swift` matches your domain
-5. ✅ The `callbackURLScheme` in `GoogleAuthManager.swift` is set to `com.smart-scheduler`
+1. ✅ The iOS URL scheme in Google Cloud Console matches what you use in code
+2. ✅ The URL scheme in Xcode matches the iOS URL scheme from Google Cloud Console
+3. ✅ The `redirectURI` in `GoogleAuthManager.swift` uses the format: `{iOS_URL_SCHEME}:/oauth/callback`
+4. ✅ The `callbackURLScheme` in `GoogleAuthManager.swift` matches the URL scheme in Xcode
 
 **How it works:** 
-- Google redirects to `https://satarora.com/oauth/callback?code=...`
-- Your HTML page immediately redirects to `com.smart-scheduler://page?code=...`
-- `ASWebAuthenticationSession` intercepts the custom scheme and closes the popup
+- Google redirects directly to `com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo:/oauth/callback?code=...`
+- `ASWebAuthenticationSession` intercepts the URL scheme and closes the popup
 - Your app receives the callback and completes the OAuth flow
+- No intermediate HTML page needed!
 
 ## How It Works
 
@@ -143,9 +126,7 @@ App opens ASWebAuthenticationSession (popup)
     ↓
 User authorizes in popup
     ↓
-Google redirects to: https://satarora.com/oauth/callback?code=...
-    ↓
-HTML page redirects to: com.smart-scheduler://page?code=...
+Google redirects directly to: com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo:/oauth/callback?code=...
     ↓
 ASWebAuthenticationSession intercepts custom scheme
     ↓
@@ -153,7 +134,7 @@ Popup closes, app receives callback URL
     ↓
 App extracts authorization code
     ↓
-App exchanges code for access_token + refresh_token
+App exchanges code for access_token + refresh_token (using PKCE, no client_secret)
     ↓
 Tokens stored in Keychain
     ↓
@@ -185,45 +166,78 @@ calendar_manager = CalendarManager(access_token=req.access_token)
 
 ## Security Considerations
 
-1. **Never commit credentials**: The `clientId` should ideally be stored in a secure configuration file or environment variable
-2. **Keychain storage**: Tokens are automatically encrypted by iOS/macOS Keychain
-3. **HTTPS only**: All API calls should use HTTPS in production
-4. **Token expiration**: Access tokens expire after 1 hour; refresh tokens are used automatically
+1. **Client ID is safe to embed**: The iOS client ID is meant to be public - it's safe to include in your app code
+2. **No client secret needed**: iOS OAuth clients use PKCE (Proof Key for Code Exchange) for security instead of client secrets
+3. **Keychain storage**: Tokens are automatically encrypted by iOS/macOS Keychain
+4. **HTTPS only**: All API calls should use HTTPS in production
+5. **Token expiration**: Access tokens expire after 1 hour; refresh tokens are used automatically
 
 ## Troubleshooting
 
+### "Access blocked: Authorization Error - Error 400: invalid_request"
+**This error means the app doesn't comply with Google's OAuth 2.0 policy.** Common causes:
+
+1. **Bundle ID Mismatch** ⚠️ Most common!
+   - Your app's Bundle ID is: `sat.smart-scheduler-fe` (from Xcode)
+   - The Bundle ID in Google Cloud Console must match **exactly**
+   - Go to Google Cloud Console > Credentials > Your iOS OAuth Client
+   - Verify the Bundle ID is exactly: `sat.smart-scheduler-fe`
+   - If it's different, edit the client or create a new one with the correct Bundle ID
+
+2. **OAuth Consent Screen Not Configured**
+   - Go to **APIs & Services** > **OAuth consent screen**
+   - Make sure all required fields are filled:
+     - App name
+     - User support email
+     - Developer contact email
+     - Scopes are added (calendar.events, calendar.readonly)
+   - Save the configuration
+
+3. **App in Testing Mode - User Not Added**
+   - If your app is in "Testing" mode, you must add test users
+   - Go to **OAuth consent screen** > **Test users**
+   - Click **+ ADD USERS**
+   - Add the email address you're trying to sign in with (`satcls10@gmail.com`)
+   - Wait a few minutes for changes to propagate
+
+4. **iOS URL Scheme Mismatch**
+   - For iOS OAuth clients, you MUST use Google's auto-generated iOS URL scheme
+   - Find your iOS URL scheme in Google Cloud Console (under "Additional information")
+   - Verify `redirectURI` in `GoogleAuthManager.swift` uses format: `{iOS_URL_SCHEME}:/oauth/callback`
+   - Verify `callbackURLScheme` in `GoogleAuthManager.swift` matches the iOS URL scheme
+   - Verify the URL scheme in Xcode matches the iOS URL scheme exactly
+
+**Quick Fix Checklist:**
+- ✅ Bundle ID in Google Cloud Console = `sat.smart-scheduler-fe` (matches Xcode exactly)
+- ✅ Using Google's iOS URL scheme (not a custom one): `com.googleusercontent.apps.167925471103-qpepk4psv6m38i6tnbctkum3rjmn58eo`
+- ✅ `redirectURI` in code = `{iOS_URL_SCHEME}:/oauth/callback`
+- ✅ URL scheme in Xcode = iOS URL scheme from Google Cloud Console
+- ✅ OAuth consent screen is fully configured
+- ✅ If in testing mode, your email is added as a test user
+- ✅ Wait 5-10 minutes after making changes for Google to propagate them
+
 ### "Access blocked: Authorization Error - Error 401: invalid_client"
 **This is the most common error!** It means:
-- ❌ The `clientId` is still set to `"YOUR_CLIENT_ID_HERE"` (placeholder)
-- ❌ You created an iOS/macOS OAuth client instead of a Web application client
+- ❌ The `clientId` is still set to `"YOUR_IOS_CLIENT_ID_HERE"` (placeholder)
+- ❌ You created a Web application OAuth client instead of an iOS client
 - ❌ The Client ID doesn't exist or is from a different project
+- ❌ The Bundle ID doesn't match your app's bundle ID
 
 **Solution:**
-1. Make sure you created a **"Web application"** OAuth client (not iOS/macOS)
-2. Copy the Client ID from Google Cloud Console
-3. Replace `"YOUR_CLIENT_ID_HERE"` in `GoogleAuthManager.swift` with your actual Client ID
-4. Make sure the redirect URI `http://localhost:8080` is added in Google Cloud Console (not the custom URL scheme)
-
-### "Invalid Redirect: You are using a sensitive scope. URI must use https:// as the scheme"
-**This error occurs when trying to add a custom URL scheme in Google Cloud Console.**
-
-**Solution:**
-- Use an HTTPS domain you control (e.g., `https://satarora.com/oauth/callback`) as the redirect URI in Google Cloud Console
-- Host an HTML page at that URL that redirects to your app's custom URL scheme
-- Google requires HTTPS for sensitive scopes, but your HTML page bridges to the custom scheme
-- `ASWebAuthenticationSession` will intercept the custom scheme redirect
-
-### "Safari can't open the page because it couldn't connect to the server"
-**This happens if you use localhost and there's no server running.**
-
-**Solution:**
-- Use an HTTPS domain instead of localhost
-- Host the HTML redirect page on that domain
-- This is the recommended approach for production and development
+1. Make sure you created an **"iOS"** OAuth client (not Web application)
+2. Verify the Bundle ID in Google Cloud Console matches your app's bundle ID
+3. Copy the Client ID from Google Cloud Console
+4. Replace `"YOUR_IOS_CLIENT_ID_HERE"` in `GoogleAuthManager.swift` with your actual Client ID
+5. Make sure you're using Google's iOS URL scheme (not a custom one)
 
 ### "Invalid redirect URI" error
-- Make sure the URL scheme in Xcode matches the `redirectURI` in code
-- Verify the redirect URI is added in Google Cloud Console under "Authorized redirect URIs"
+**This happens when the redirect URI doesn't match Google's iOS URL scheme.**
+
+**Solution:**
+- For iOS OAuth clients, you MUST use Google's auto-generated iOS URL scheme
+- Find your iOS URL scheme in Google Cloud Console (under "Additional information" > "iOS URL scheme")
+- Use this format for `redirectURI`: `{iOS_URL_SCHEME}:/oauth/callback`
+- Make sure the URL scheme in Xcode matches the iOS URL scheme exactly
 - The redirect URI must match exactly (including the `:/` part)
 
 ### "Token refresh failed" error

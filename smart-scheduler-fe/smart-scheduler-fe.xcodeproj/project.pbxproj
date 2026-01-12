@@ -10,9 +10,22 @@
 		17E1813B2F0C6D8000B93BA7 /* smart-scheduler-fe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "smart-scheduler-fe.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		17FF62FD2F158BCE00FB3758 /* Exceptions for "smart-scheduler-fe" folder in "smart-scheduler-fe" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 17E1813A2F0C6D8000B93BA7 /* smart-scheduler-fe */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		17E1813D2F0C6D8000B93BA7 /* smart-scheduler-fe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				17FF62FD2F158BCE00FB3758 /* Exceptions for "smart-scheduler-fe" folder in "smart-scheduler-fe" target */,
+			);
 			path = "smart-scheduler-fe";
 			sourceTree = "<group>";
 		};
@@ -254,6 +267,8 @@
 				DEVELOPMENT_TEAM = DNCJ3GHLYA;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "smart-scheduler-fe/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Needed to record the rants to create your schedule.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Needed to turn your rants into text.";
@@ -289,6 +304,8 @@
 				DEVELOPMENT_TEAM = DNCJ3GHLYA;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "smart-scheduler-fe/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Needed to record the rants to create your schedule.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Needed to turn your rants into text.";
