@@ -256,6 +256,33 @@ struct ContentView: View {
                     )
                 }
             }
+            .sheet(isPresented: $showTodaySchedule) {
+                TodayScheduleView(
+                    events: todayEvents,
+                    isLoading: isLoadingTodayEvents,
+                    isPresented: $showTodaySchedule
+                )
+            }
+        }
+    }
+    
+    func loadTodaySchedule() {
+        showTodaySchedule = true
+        isLoadingTodayEvents = true
+        
+        Task {
+            do {
+                let response = try await apiService.getTodayEvents()
+                await MainActor.run {
+                    todayEvents = response.events
+                    isLoadingTodayEvents = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to load today's schedule: \(error.localizedDescription)"
+                    isLoadingTodayEvents = false
+                }
+            }
         }
     }
     

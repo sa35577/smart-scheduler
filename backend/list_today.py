@@ -54,11 +54,29 @@ def list_today_events(service=None) -> list[Event]:
     for evt in events:
         start = evt['start'].get('dateTime', evt['start'].get('date'))
         end   = evt['end'].get('dateTime',   evt['end'].get('date'))
-        # Optionally parse back into local time for nicer formatting:
-        start_fmt = datetime.datetime.fromisoformat(start).strftime('%I:%M %p')
-        end_fmt   = datetime.datetime.fromisoformat(end).strftime('%I:%M %p')
+        
+        # Parse the datetime strings
+        start_dt = datetime.datetime.fromisoformat(start.replace('Z', '+00:00'))
+        end_dt = datetime.datetime.fromisoformat(end.replace('Z', '+00:00'))
+        
+        # Ensure timezone info is present
+        if start_dt.tzinfo is None:
+            start_dt = start_dt.replace(tzinfo=tz)
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=tz)
+        
+        # Format for logging (human-readable)
+        start_fmt = start_dt.strftime('%I:%M %p')
+        end_fmt = end_dt.strftime('%I:%M %p')
         logging.info(f" • {evt['summary']} — {start_fmt} to {end_fmt}")
-        results.append(Event(summary=evt['summary'], start=start_fmt, end=end_fmt))
+        
+        # Store ISO8601 format for API (consistent with schedule generation)
+        results.append(Event(
+            summary=evt['summary'], 
+            start=start_dt.isoformat(), 
+            end=end_dt.isoformat(),
+            already_in_calendar=True
+        ))
 
     return results
 
