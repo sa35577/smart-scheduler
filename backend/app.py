@@ -82,14 +82,37 @@ def generate_schedule(req: ScheduleRequest):
         prompt_generator = PromptGenerator(client)
         scheduler_pipeline = SchedulerPipeline(calendar_manager, prompt_generator)
         
-        # Parse tasks from rant
-        tasks = prompt_generator.generate_tasks(req.rant)
+        logging.info("=" * 80)
+        logging.info(f"🚀 GENERATING SCHEDULE FROM RANT: '{req.rant}'")
+        logging.info("=" * 80)
         
-        # Generate initial schedule
+        # Step 1: Get existing events
+        existing_events = scheduler_pipeline._get_existing_events()
+        logging.info(f"📅 FOUND {len(existing_events)} EXISTING EVENTS")
+        for i, event in enumerate(existing_events, 1):
+            logging.info(f"  [{i}] {event.summary} ({event.start} → {event.end})")
+        
+        # Step 2: Parse tasks from rant
+        tasks = prompt_generator.generate_tasks(req.rant)
+        logging.info(f"📋 PARSED {len(tasks)} TASKS FROM RANT:")
+        for i, task in enumerate(tasks, 1):
+            logging.info(f"  [{i}] {task.summary} (Duration: {task.duration_minutes}m)")
+            if task.priority: logging.info(f"      Priority: {task.priority}")
+        
+        # Step 3: Generate initial schedule
         schedule = scheduler_pipeline._generate_schedule(
-            scheduler_pipeline._get_existing_events(), 
+            existing_events, 
             tasks
         )
+        
+        logging.info("=" * 80)
+        logging.info(f"🤖 INITIAL SCHEDULE GENERATED ({len(schedule)} events):")
+        for i, event in enumerate(schedule, 1):
+            status = "NEW" if not event.already_in_calendar else ("MODIFIED" if event.is_modified else "EXISTING")
+            logging.info(f"  [{i}] [{status}] {event.summary} ({event.start} → {event.end})")
+            if event.is_modified:
+                logging.info(f"      → MOVED FROM: {event.original_start}")
+        logging.info("=" * 80)
         
         # Store session
         sessions[session_id] = {
