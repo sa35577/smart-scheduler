@@ -88,16 +88,26 @@ struct ContentView: View {
                     .padding(.horizontal)
                     
                     // Status Header
-                    Text(inputMode == .speech && speechManager.isRecording ? "Listening to your rant..." : "Smart Scheduler")
+                    Text({
+                        if inputMode == .speech && speechManager.isRecording {
+                            return "Listening to your rant..."
+                        } else if isAdjusting {
+                            return "Adjusting Schedule"
+                        } else {
+                            return "Smart Scheduler"
+                        }
+                    }())
                         .font(.headline)
                         .foregroundColor(inputMode == .speech && speechManager.isRecording ? .red : .primary)
                     
                     // Input Area - Different based on mode
                     if inputMode == .speech {
                         // Speech Mode - Live Text Display
+                        let speechPlaceholder = isAdjusting ? "Tap the mic and describe how to adjust the schedule..." : "Tap the mic and start talking about your day."
                         ScrollView {
-                            Text(speechManager.transcript.isEmpty ? "Tap the mic and start talking about your day." : speechManager.transcript)
+                            Text(speechManager.transcript.isEmpty ? speechPlaceholder : speechManager.transcript)
                                 .font(.system(size: 20, weight: .medium, design: .rounded))
+                                .foregroundColor(speechManager.transcript.isEmpty ? .secondary : .primary)
                                 .padding()
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -128,6 +138,7 @@ struct ContentView: View {
                         }
                     } else {
                         // Text Mode - Text Input Field
+                        let textPlaceholder = isAdjusting ? "Describe how to adjust the schedule..." : "Type your schedule request here..."
                         TextEditor(text: $typedText)
                             .font(.system(size: 20, weight: .medium, design: .rounded))
                             .padding(8)
@@ -139,7 +150,7 @@ struct ContentView: View {
                                     if typedText.isEmpty {
                                         VStack {
                                             HStack {
-                                                Text("Type your schedule request here...")
+                                                Text(textPlaceholder)
                                                     .foregroundColor(.secondary)
                                                     .padding(.leading, 12)
                                                     .padding(.top, 16)
@@ -248,15 +259,13 @@ struct ContentView: View {
                         onAdjust: {
                             showSchedule = false
                             isAdjusting = true
-                            // Pre-fill with adjustment prompt
+                            // Pre-fill with adjustment prompt, keeping current input mode
                             if inputMode == .text {
                                 typedText = "Adjust the schedule: "
                                 isTextFieldFocused = true
                             } else {
-                                // Switch to text mode for adjustments
-                                inputMode = .text
-                                typedText = "Adjust the schedule: "
-                                isTextFieldFocused = true
+                                // Keep speech mode, clear transcript for new adjustment
+                                speechManager.transcript = ""
                             }
                         },
                         onCommit: {
