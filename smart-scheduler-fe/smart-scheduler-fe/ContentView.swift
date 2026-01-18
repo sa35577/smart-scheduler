@@ -13,7 +13,7 @@ struct ContentView: View {
     @State private var apiService: APIService
     @State private var isAuthenticating = false
     @State private var isLoading = false
-    @State private var errorMessage: String?
+    @State private var toast: Toast?
     @State private var scheduleId: String?
     @State private var currentSchedule: [CalendarEvent] = []
     @State private var inputMode: InputMode = .speech
@@ -215,16 +215,10 @@ struct ContentView: View {
                     .padding(.top, 20)
                 }
                 
-                // Error Message
-                if let errorMessage = errorMessage {
-                    Text(errorMessage)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                        .padding()
-                }
             }
             .padding()
             .navigationTitle("Smart Scheduler")
+            .toast($toast)
             .overlay(alignment: .bottomTrailing) {
                 // Floating button to view today's schedule
                 if authManager.isAuthenticated {
@@ -307,7 +301,7 @@ struct ContentView: View {
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to load today's schedule: \(error.localizedDescription)"
+                    toast = Toast(message: "Failed to load today's schedule: \(error.localizedDescription)", type: .error)
                     isLoadingTodayEvents = false
                 }
             }
@@ -318,14 +312,14 @@ struct ContentView: View {
     
     func authenticate() {
         isAuthenticating = true
-        errorMessage = nil
+        toast = nil
         
         Task {
             do {
                 try await authManager.authenticate()
                 await MainActor.run {
                     isAuthenticating = false
-                    errorMessage = nil
+                    toast = Toast(message: "Successfully signed in!", type: .success)
                 }
             } catch {
                 let errorMsg: String
@@ -338,7 +332,7 @@ struct ContentView: View {
                 print("❌ Authentication error: \(error)")
                 
                 await MainActor.run {
-                    errorMessage = errorMsg
+                    toast = Toast(message: errorMsg, type: .error)
                     isAuthenticating = false
                 }
             }
@@ -350,7 +344,7 @@ struct ContentView: View {
         guard !textToSend.isEmpty else { return }
         
         isLoading = true
-        errorMessage = nil
+        toast = nil
         
         // Dismiss keyboard if in text mode
         if inputMode == .text {
@@ -373,7 +367,7 @@ struct ContentView: View {
                     scheduleId = response.schedule_id
                     currentSchedule = response.schedule
                     isLoading = false
-                    errorMessage = nil
+                    toast = Toast(message: isAdjusting ? "Schedule updated successfully!" : "Schedule generated successfully!", type: .success)
                     isAdjusting = false
                     
                     // Clear input after successful submission
@@ -390,7 +384,7 @@ struct ContentView: View {
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to \(isAdjusting ? "adjust" : "generate") schedule: \(error.localizedDescription)"
+                    toast = Toast(message: "Failed to \(isAdjusting ? "adjust" : "generate") schedule: \(error.localizedDescription)", type: .error)
                     isLoading = false
                 }
             }
@@ -401,14 +395,14 @@ struct ContentView: View {
         guard let scheduleId = scheduleId else { return }
         
         isLoading = true
-        errorMessage = nil
+        toast = nil
         
         Task {
             do {
                 let response = try await apiService.commitSchedule(scheduleId: scheduleId)
                 await MainActor.run {
                     isLoading = false
-                    errorMessage = "Successfully committed schedule to calendar!"
+                    toast = Toast(message: "Successfully committed schedule to calendar!", type: .success)
                     self.scheduleId = nil
                     self.currentSchedule = []
                     self.showSchedule = false
@@ -421,7 +415,7 @@ struct ContentView: View {
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to commit schedule: \(error.localizedDescription)"
+                    toast = Toast(message: "Failed to commit schedule: \(error.localizedDescription)", type: .error)
                     isLoading = false
                 }
             }
@@ -434,7 +428,7 @@ struct ContentView: View {
         currentSchedule = []
         speechManager.transcript = ""
         typedText = ""
-        errorMessage = nil
+        toast = nil
     }
 }
 
