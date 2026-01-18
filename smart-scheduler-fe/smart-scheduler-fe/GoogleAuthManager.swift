@@ -450,6 +450,17 @@ extension GoogleAuthManager: ASWebAuthenticationPresentationContextProviding {
         #if os(macOS)
         return NSApplication.shared.windows.first { $0.isKeyWindow } ?? NSWindow()
         #elseif os(iOS)
+        // Use the modern API for iOS 15+
+        if let windowScene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+           let window = windowScene.windows.first(where: { $0.isKeyWindow }) {
+            return window
+        }
+        // Fallback: create a window with a window scene if available
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            return UIWindow(windowScene: windowScene)
+        }
+        // Last resort fallback (deprecated but needed for older iOS versions)
         return UIApplication.shared.windows.first { $0.isKeyWindow } ?? UIWindow()
         #endif
     }
