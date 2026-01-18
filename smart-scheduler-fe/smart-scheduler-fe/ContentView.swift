@@ -107,9 +107,12 @@ struct ContentView: View {
                         
                         // Record Button
                         Button(action: {
+                            // print("🔘 [ContentView] Record button tapped - isRecording: \(speechManager.isRecording)")
                             if speechManager.isRecording {
+                                // print("🔘 [ContentView] Calling stopRecording() from button")
                                 speechManager.stopRecording()
                             } else {
+                                // print("🔘 [ContentView] Calling startRecording() from button")
                                 speechManager.startRecording()
                             }
                         }) {
@@ -151,7 +154,13 @@ struct ContentView: View {
                     }
                     
                     // Submit Button (Only shows when not recording and text exists)
-                    if !currentInputText.isEmpty && (inputMode == .text || !speechManager.isRecording) {
+                    let shouldShowGenerateButton = !currentInputText.isEmpty && (inputMode == .text || !speechManager.isRecording)
+                    // if shouldShowGenerateButton {
+                    //     let _ = print("✅ [ContentView] Showing Generate button - currentInputText.isEmpty: \(currentInputText.isEmpty), inputMode: \(inputMode), isRecording: \(speechManager.isRecording), transcript: '\(speechManager.transcript)'")
+                    // } else {
+                    //     let _ = print("❌ [ContentView] Hiding Generate button - currentInputText.isEmpty: \(currentInputText.isEmpty), inputMode: \(inputMode), isRecording: \(speechManager.isRecording), transcript: '\(speechManager.transcript)'")
+                    // }
+                    if shouldShowGenerateButton {
                         Button(action: sendToBackend) {
                             HStack {
                                 if isLoading {

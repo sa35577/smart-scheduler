@@ -21,9 +21,11 @@ class SpeechManager {
     var isRecording: Bool = false
     
     func startRecording() {
+        // print("🎤 [SpeechManager] startRecording() called")
         // Reset transcript for new rant
         transcript = ""
         isRecording = true
+        // print("🎤 [SpeechManager] isRecording set to: \(isRecording), transcript: '\(transcript)'")
         
         guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
             print("❌ Speech recognizer not available")
@@ -87,24 +89,56 @@ class SpeechManager {
         recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self = self else { return }
             
+            // Don't process results if we've already stopped recording
+            guard self.isRecording else {
+                // print("⏭️ [SpeechManager] Ignoring recognition result - already stopped")
+                return
+            }
+            
             if let result = result {
                 // This updates your UI in real-time
                 DispatchQueue.main.async {
+                    // Double-check we're still recording before updating transcript
+                    guard self.isRecording else {
+                        // print("⏭️ [SpeechManager] Skipping transcript update - recording stopped")
+                        return
+                    }
+                    let oldTranscript = self.transcript
                     self.transcript = result.bestTranscription.formattedString
+                    // print("📝 [SpeechManager] Transcript updated: '\(oldTranscript)' -> '\(self.transcript)' (isFinal: \(result.isFinal))")
                 }
             }
             
             if let error = error {
-                // Don't log "No speech detected" as an error - it's normal when user isn't speaking
-                if !error.localizedDescription.contains("No speech detected") {
-                    print("❌ Speech recognition error: \(error.localizedDescription)")
+                // Don't log cancellation or "No speech detected" as errors - they're normal
+                let errorDesc = error.localizedDescription
+                // print("⚠️ [SpeechManager] Recognition callback error: \(errorDesc)")
+                // print("⚠️ [SpeechManager] Current state - isRecording: \(self.isRecording), transcript length: \(self.transcript.count)")
+                
+                if !errorDesc.contains("canceled") && !errorDesc.contains("No speech detected") {
+                    print("❌ Speech recognition error: \(errorDesc)")
                 }
+                // Only stop if we're still recording (prevents double-stop)
                 DispatchQueue.main.async {
-                    self.stopRecording()
+                    // print("🔄 [SpeechManager] Error callback - checking if should stop. isRecording: \(self.isRecording)")
+                    if self.isRecording {
+                        // print("🛑 [SpeechManager] Calling stopRecording() from error callback")
+                        self.stopRecording()
+                    } else {
+                        // print("⏭️ [SpeechManager] Skipping stopRecording() - already stopped")
+                    }
                 }
             } else if result?.isFinal == true {
+                // print("✅ [SpeechManager] Recognition final result received")
+                // Only stop if we're still recording (prevents double-stop)
                 DispatchQueue.main.async {
-                    self.stopRecording()
+                    // print("🔄 [SpeechManager] Final result callback - checking if should stop. isRecording: \(self.isRecording)")
+                    if self.isRecording {
+                        // print("🛑 [SpeechManager] Calling stopRecording() from final result callback")
+                        self.stopRecording()
+                    } else {
+                        // print("⏭️ [SpeechManager] Skipping stopRecording() - already stopped")
+                    }
                 }
             }
         }
@@ -153,18 +187,41 @@ class SpeechManager {
     }
     
     func stopRecording() {
+        // print("🛑 [SpeechManager] stopRecording() called")
+        // print("🛑 [SpeechManager] Current state - isRecording: \(isRecording), transcript: '\(transcript)'")
+        
+        // Prevent multiple calls to stopRecording
+        guard isRecording else {
+            // print("⏭️ [SpeechManager] stopRecording() already called - skipping")
+            return
+        }
+        
+        // Preserve the current transcript before stopping
+        let preservedTranscript = transcript
+        // print("🛑 [SpeechManager] Preserving transcript: '\(preservedTranscript)'")
+        
+        // print("🛑 [SpeechManager] Setting isRecording to false")
+        isRecording = false
+        // print("🛑 [SpeechManager] isRecording is now: \(isRecording)")
+        
         if audioEngine.isRunning {
+            // print("🛑 [SpeechManager] Stopping audio engine")
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
         }
+        
+        // print("🛑 [SpeechManager] Ending recognition request and canceling task")
         recognitionRequest?.endAudio()
         recognitionRequest = nil
         recognitionTask?.cancel()
         recognitionTask = nil
         
+        // Restore preserved transcript (in case callbacks cleared it)
+        transcript = preservedTranscript
+        // print("🛑 [SpeechManager] Restored transcript: '\(transcript)'")
+        
         // Deactivate audio session
         try? AVAudioSession.sharedInstance().setActive(false)
-        
-        isRecording = false
+        // print("🛑 [SpeechManager] stopRecording() complete - isRecording: \(isRecording), transcript: '\(transcript)'")
     }
 }

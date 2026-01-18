@@ -13,8 +13,16 @@ class APIService {
     private let baseURL: String
     private let authManager: GoogleAuthManager
     
-    init(baseURL: String = "http://localhost:8000", authManager: GoogleAuthManager) {
-        self.baseURL = baseURL
+    init(baseURL: String? = nil, authManager: GoogleAuthManager) {
+        // Use provided URL, or environment-based default
+        #if DEBUG
+        // Development: Use Railway for testing, or localhost for local dev
+        // Change this to "http://localhost:8000" when testing locally
+        self.baseURL = baseURL ?? "https://smart-scheduler-production-240b.up.railway.app"
+        #else
+        // Production: Railway deployed backend URL
+        self.baseURL = baseURL ?? "https://smart-scheduler-production-240b.up.railway.app"
+        #endif
         self.authManager = authManager
     }
     
